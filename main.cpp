@@ -75,9 +75,20 @@ int main() {
     CheckOnDiskSize<TVolume::TInode>();
     CheckOnDiskSize<TVolume::TBlockGroupDescr>();
 
-    //TVolume vol("./var/volume1", {});
-    //(void)vol;
-    //assert(vol.GetSuperBlock().BlockSize == 4096);
+    TVolume vol("./var/volume1", {});
+    (void)vol;
+
+    auto& meta = *vol.MetaGroups_[0];
+    if (meta.AliveBlockGroupCount == 0) {
+        meta.AllocateNewBlockGroup();
+    }
+
+    auto& bg = *meta.BlockGroups[0];
+    auto inode = bg.ReadInode(10);
+    inode.CreationTime = NowSeconds();
+    inode.BlockCount = 500;
+
+    bg.WriteInode(inode, 10); // FIXME Store inodeid in in-memory version
 
     return 0;
 }

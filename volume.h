@@ -65,6 +65,26 @@ namespace NJK {
             static constexpr ui32 OnDiskSize = 44;
         };
 
+        struct TInode {
+            enum class EType: ui32 {
+            };
+            //bool Used = false; See in bitmap
+            EType Type{};
+            ui32 BlockCount = 0; // bool Inline = true;
+            ui32 CreationTime{};
+            ui32 ModTime{};
+
+            void Serialize(IOutputStream& out) const {
+                SerializeMany(out, Type, BlockCount, CreationTime, ModTime, TSkipMe{48});
+            }
+
+            void Deserialize(IInputStream& in) {
+                DeserializeMany(in, Type, BlockCount, CreationTime, ModTime, TSkipMe{48});
+            }
+
+            static constexpr ui32 OnDiskSize = 64;
+        };
+
         // 128 MiB Data Blocks
         // Layout
         // 1 block Data Block Bitmap
@@ -94,7 +114,34 @@ namespace NJK {
                 Flush();
             }
 
+            TInode ReadInode(ui32 id) {
+                // TODO Block Cache
+                auto buf = SuperBlock->NewBuffer();
+                File_.ReadBlock(buf, CalcInodeBlockIndex(id));
+
+                TBufInput in(buf);
+                in.SkipRead(CalcInodeInBlockOffset(id));
+                TInode inode;
+                inode.Deserialize(in);
+                return inode;
+            }
+
+            void WriteInode(const TInode& inode, ui32 id) {
+                // TODO Block Cache
+                auto buf = SuperBlock->NewBuffer();
+                File_.ReadBlock(buf, CalcInodeBlockIndex(id));
+
+                TBufOutput out(buf);
+                out.SkipWrite(CalcInodeInBlockOffset(id));
+                inode.Serialize(out);
+
+                File_.WriteBlock(buf, CalcInodeBlockIndex(id));
+            }
+
         private:
+            ui32 CalcInodeInBlockOffset(ui32 inodeId) const {
+                return (inodeId - InodeIndexOffset) * TInode::OnDiskSize % SuperBlock->BlockSize;
+            }
             ui32 CalcInodeBlockIndex(ui32 inodeId) const {
                 return 2 + (inodeId - InodeIndexOffset) * TInode::OnDiskSize / SuperBlock->BlockSize;
             }
@@ -181,10 +228,13 @@ namespace NJK {
             }
 
         private:
+        public:
             void AllocateNewBlockGroup() {
                 Y_ENSURE(AliveBlockGroupCount < SuperBlock->MaxBlockGroupCount);
 
-                auto& bg = BlockGroupDescrs[AliveBlockGroupCount];
+                const auto blockGroupIdx = AliveBlockGroupCount;
+
+                auto& bg = BlockGroupDescrs[blockGroupIdx];
                 bg.D.CreationTime = NowSeconds();
                 bg.D.FreeInodeCount = SuperBlock->BlockGroupInodeCount;
                 bg.D.FreeDataBlockCount = SuperBlock->BlockGroupDataBlockCount;
@@ -193,16 +243,22 @@ namespace NJK {
                 FreeInodeCount += bg.D.FreeInodeCount;
                 FreeDataBlockCount += bg.D.FreeDataBlockCount;
 
-                // FIXME Better offset
-                BlockGroups[AliveBlockGroupCount] = std::make_unique<TBlockGroup>(
-                    CalcExpectedFileSize(),
-                    AliveBlockGroupCount * SuperBlock->BlockGroupInodeCount, // TODO Add MetaGroup Inode offset
-                    File,
-                    *SuperBlock);
+                //const size_t offset = CalcExpectedFileSize();
 
                 ++AliveBlockGroupCount;
                 File.Truncate(CalcExpectedFileSize());
 
+                // FIXME Better offset
+                BlockGroups[blockGroupIdx] = CreateBlockGroup(blockGroupIdx);
+            }
+
+            std::unique_ptr<TBlockGroup> CreateBlockGroup(ui32 blockGroupIdx) {
+                return std::make_unique<TBlockGroup>(
+                    CalcBlockGroupOffset(blockGroupIdx),
+                    blockGroupIdx * SuperBlock->BlockGroupInodeCount, // TODO Add MetaGroup Inode offset
+                    File,
+                    *SuperBlock
+                );
             }
 
             void LoadBlockGroupDescriptors() {
@@ -212,6 +268,9 @@ namespace NJK {
                 DeserializeFixedVector(in, BlockGroupDescrs);
                 for (const auto& bg : BlockGroupDescrs) {
                     if (bg.D.CreationTime) {
+                        // TODO Better, lazy, this code ugly
+                        BlockGroups[AliveBlockGroupCount] = CreateBlockGroup(AliveBlockGroupCount);
+
                         ++AliveBlockGroupCount;
                         FreeInodeCount += bg.D.FreeInodeCount;
                         FreeDataBlockCount += bg.D.FreeDataBlockCount;
@@ -220,8 +279,12 @@ namespace NJK {
                 }
             }
 
+            ui32 CalcBlockGroupOffset(ui32 blockGroupIdx) const {
+                return SuperBlock->ZeroBlockGroupOffset + blockGroupIdx * SuperBlock->BlockGroupSize;
+            }
+
             ui32 CalcExpectedFileSize() const {
-                return SuperBlock->ZeroBlockGroupOffset + AliveBlockGroupCount * SuperBlock->BlockGroupSize;
+                return CalcBlockGroupOffset(AliveBlockGroupCount);
             }
 
             void VerifyFile() {
@@ -265,6 +328,7 @@ namespace NJK {
             //}
 
         private:
+        public:
             // in-memory only
             const TSuperBlock* SuperBlock{};
             ui32 Index = 0;
@@ -290,9 +354,10 @@ namespace NJK {
         }
 
         void InitSuperBlock(const TSettings& settings) {
-            if (std::filesystem::exists(Directory_)) {
+            const auto& sbPath = MakeSuperBlockFilePath();
+            if (std::filesystem::exists(sbPath)) {
                 auto buf = TFixedBuffer::Aligned(settings.BlockSize); // FIXME
-                TDirectIoFile f(MakeSuperBlockFilePath());
+                TDirectIoFile f(sbPath);
                 ReadBlock(f, buf, 0);
                 TBufInput in(buf);
                 SuperBlock_.Deserialize(in);
@@ -302,7 +367,7 @@ namespace NJK {
                 auto buf = SuperBlock_.NewBuffer();
                 TBufOutput out(buf);
                 SuperBlock_.Serialize(out);
-                TDirectIoFile f(MakeSuperBlockFilePath());
+                TDirectIoFile f(sbPath);
                 WriteBlock(f, buf, 0);
             }
         }
@@ -369,27 +434,8 @@ namespace NJK {
         //    Data Blocks (32K blocks at maximum (128 MiB)) 
         // ]
 
-        struct TInode {
-            enum class EType: ui32 {
-            };
-            //bool Used = false; See in bitmap
-            EType Type{};
-            ui32 BlockCount = 0; // bool Inline = true;
-            ui32 CreationTime{};
-            ui32 ModTime{};
-
-            void Serialize(IOutputStream& out) const {
-                SerializeMany(out, Type, BlockCount, CreationTime, ModTime, TSkipMe{48});
-            }
-
-            void Deserialize(IInputStream& in) {
-                DeserializeMany(in, Type, BlockCount, CreationTime, ModTime, TSkipMe{48});
-            }
-
-            static constexpr ui32 OnDiskSize = 64;
-        };
-
     private:
+    public:
         std::string Directory_;
         TSuperBlock SuperBlock_;
         std::vector<std::unique_ptr<TMetaGroup>> MetaGroups_;

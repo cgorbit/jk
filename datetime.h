@@ -7,7 +7,8 @@
 namespace NJK {
 
     inline ui32 NowSeconds() {
-        return std::chrono::system_clock::now().time_since_epoch().count();
+        //return std::chrono::system_clock::now().time_since_epoch().count();
+        return std::time(0);
     }
 
 }
