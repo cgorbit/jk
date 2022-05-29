@@ -1,5 +1,6 @@
 #pragma once
 
+#include "fixed_buffer.h"
 #include <cstddef>
 
 namespace NJK {
@@ -7,27 +8,30 @@ namespace NJK {
     // TODO What fragmentation and overhead issues will be in C++ allocator?
     class TBlockBitSet {
     public:
-        TBlockBitSet() {
+        TBlockBitSet(TFixedBuffer&& buf)
+            : Buf_(std::move(buf))
+        {
         }
 
         ~TBlockBitSet() {
-            delete[] Page_;
+            //delete[] Page_;
         }
 
-        bool IsAllocated() const {
-            return Page_ != nullptr;
-        }
+        //bool IsAllocated() const {
+        //    //return Page_ != nullptr;
+        //}
 
-        void Allocate() {
-            Page_ = new std::byte[ByteSize];
-        }
+        //void Allocate() {
+        //    Page_ = new std::byte[ByteSize];
+        //}
 
         bool test(size_t pos) const {
-            return static_cast<bool>(Page_[pos / 8] & static_cast<std::byte>(1 << (pos % 8)));
+            const auto& b = reinterpret_cast<const std::byte&>(Buf_.Data()[pos / 8]);
+            return static_cast<bool>(b & static_cast<std::byte>(1 << (pos % 8)));
         }
 
         void set(size_t pos, bool value = true) {
-            auto& b = Page_[pos / 8];
+            auto& b = reinterpret_cast<std::byte&>(Buf_.Data()[pos / 8]);
             if (value) {
                 b |= static_cast<std::byte>(1 << (pos % 8));
             } else {
@@ -35,19 +39,27 @@ namespace NJK {
             }
         }
 
-        const std::byte* data() const {
-            return Page_;
+        const TFixedBuffer& Buf() const {
+            return Buf_;
         }
 
-        std::byte* data() {
-            return Page_;
+        TFixedBuffer& Buf() {
+            return Buf_;
         }
+
+        //const char* data() const {
+        //    return Buf_.Data();
+        //}
+
+        //char* data() {
+        //    return Buf_.Data();
+        //}
 
     public:
-        static const constexpr size_t ByteSize = 4096;
+        //static const constexpr size_t ByteSize = 4096;
 
     private:
-        std::byte* Page_{};
+        TFixedBuffer Buf_;
     };
 
 }

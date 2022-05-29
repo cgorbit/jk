@@ -13,6 +13,7 @@ namespace NJK {
         ::NJK::Serialize(out, MaxFileSize);
         ::NJK::Serialize(out, ZeroBlockGroupOffset);
         ::NJK::Serialize(out, BlockGroupInodeCount);
+        ::NJK::Serialize(out, BlockGroupDataBlockCount);
         ::NJK::Serialize(out, MetaGroupInodeCount);
     }
 
@@ -26,11 +27,20 @@ namespace NJK {
         ::NJK::Deserialize(in, MaxFileSize);
         ::NJK::Deserialize(in, ZeroBlockGroupOffset);
         ::NJK::Deserialize(in, BlockGroupInodeCount);
+        ::NJK::Deserialize(in, BlockGroupDataBlockCount);
         ::NJK::Deserialize(in, MetaGroupInodeCount);
     }
 
     void TVolume::TBlockGroupDescr::Serialize(IOutputStream& out) const {
+        ::NJK::Serialize(out, D.CreationTime);
+        ::NJK::Serialize(out, D.FreeInodeCount);
+        ::NJK::Serialize(out, D.FreeDataBlockCount);
+        ::NJK::Serialize(out, D.DirectoryCount);
     }
     void TVolume::TBlockGroupDescr::Deserialize(IInputStream& in) {
+        ::NJK::Deserialize(in, D.CreationTime);
+        ::NJK::Deserialize(in, D.FreeInodeCount);
+        ::NJK::Deserialize(in, D.FreeDataBlockCount);
+        ::NJK::Deserialize(in, D.DirectoryCount);
     }
 }

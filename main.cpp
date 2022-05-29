@@ -1,4 +1,5 @@
 #include "volume.h"
+#include "fixed_buffer.h"
 #include <cassert>
 #include <iostream>
 #include <sstream>
@@ -26,13 +27,15 @@ void TestSuperBlockSerialization() {
     using namespace NJK;
 
     const auto src = TVolume::CalcSuperBlock({});
-    TFixedBuffer buf(src.BlockSize);
+    auto buf = TFixedBuffer::Aligned(src.BlockSize);
     TBufOutput out(buf);
-    src.Serialize(out);
+    //src.Serialize(out);
+    SerializeChecked(out, src);
 
     TVolume::TSuperBlock dst;
     TBufInput in(buf);
-    dst.Deserialize(in);
+    DeserializeChecked(in, dst);
+    //dst.Deserialize(in);
 
     assert(src.BlockSize == dst.BlockSize);
 #define CMP(field) assert(src.field == dst.field);
@@ -46,15 +49,33 @@ void TestSuperBlockSerialization() {
 #undef CMP
 }
 
+template <typename T>
+void CheckOnDiskSize() {
+    using namespace NJK;
+
+    auto buf = TFixedBuffer::Aligned(4096);
+    T src;
+    TBufOutput out(buf);
+    SerializeChecked(out, src);
+
+    TVolume::TSuperBlock dst;
+    TBufInput in(buf);
+    DeserializeChecked(in, dst);
+}
+
 int main() {
     using namespace NJK;
 
     TestDefaultSuperBlockCalc();
     TestSuperBlockSerialization();
 
-    TVolume vol("./var/volume1", {});
-    (void)vol;
-    assert(vol.GetSuperBlock().BlockSize == 4096);
+    CheckOnDiskSize<TVolume::TSuperBlock>();
+    CheckOnDiskSize<TVolume::TInode>();
+    CheckOnDiskSize<TVolume::TBlockGroupDescr>();
+
+    //TVolume vol("./var/volume1", {});
+    //(void)vol;
+    //assert(vol.GetSuperBlock().BlockSize == 4096);
 
     return 0;
 }

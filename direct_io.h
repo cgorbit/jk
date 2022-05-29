@@ -11,8 +11,12 @@ namespace NJK {
         TDirectIoFile(const std::string& path);
         ~TDirectIoFile();
 
+        TDirectIoFile(const TDirectIoFile&) = delete;
+        TDirectIoFile& operator= (const TDirectIoFile&) = delete;
+
         size_t Read(char* dst, size_t count, off_t offset) const;
         size_t Write(const char* dst, size_t count, off_t offset);
+
         size_t GetSize() const;
         void Truncate(size_t size);
 

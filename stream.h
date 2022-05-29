@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common.h"
+#include "fixed_buffer.h"
 #include <cstddef>
 #include <cstring>
 
@@ -13,6 +14,11 @@ namespace NJK {
         void Save(const char* buf, size_t count) {
             Y_ENSURE(Write(buf, count) == count);
         }
+
+        virtual void SkipWrite(size_t count) {
+            char buf[count];
+            Y_ENSURE(Write(buf, count) == count);
+        }
     };
 
     class IInputStream {
@@ -20,6 +26,11 @@ namespace NJK {
         virtual size_t Read(char* buf, size_t count) = 0;
 
         void Load(char* buf, size_t count) {
+            Y_ENSURE(Read(buf, count) == count);
+        }
+
+        virtual void SkipRead(size_t count) {
+            char buf[count];
             Y_ENSURE(Read(buf, count) == count);
         }
     };
@@ -38,11 +49,15 @@ namespace NJK {
         {
         }
 
-        size_t Write(const char* src, size_t count) {
+        size_t Write(const char* src, size_t count) override {
             Y_ENSURE(Pos_ + count <= Size_);
             std::memcpy(Buf_ + Pos_, src, count);
             Pos_ += count;
             return count;
+        }
+
+        void SkipWrite(size_t count) override {
+            Pos_ += count;
         }
 
     private:
@@ -65,11 +80,15 @@ namespace NJK {
         {
         }
 
-        size_t Read(char* dst, size_t count) {
+        size_t Read(char* dst, size_t count) override {
             Y_ENSURE(Pos_ + count <= Size_);
             std::memcpy(dst, Buf_ + Pos_, count);
             Pos_ += count;
             return count;
+        }
+
+        void SkipRead(size_t count) override {
+            Pos_ += count;
         }
 
     private:
