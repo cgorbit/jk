@@ -88,6 +88,11 @@ namespace NJK {
             static constexpr ui32 OnDiskSize = 64;
         };
 
+        struct TDataBlock {
+            ui32 Id = 0;
+            TFixedBuffer Buf;
+        };
+
         // 128 MiB Data Blocks
         // Layout
         // 1 block Data Block Bitmap
@@ -102,64 +107,14 @@ namespace NJK {
         // TODO Choose Block Size other than 4 KiB
         class TBlockGroup {
         public:
-            TBlockGroup(size_t inFileOffset, ui32 inodeOffset, TDirectIoFile& file, const TSuperBlock& sb)
-                : SuperBlock(&sb)
-                , File_(file, sb.BlockSize, inFileOffset)
-                , InodeIndexOffset(inodeOffset)
-                , InodesBitmap(SuperBlock->NewBuffer())
-                , DataBlocksBitmap(SuperBlock->NewBuffer())
-            {
-                File_.ReadBlock(InodesBitmap.Buf(), InodesBitmapBlockIndex);
-                File_.ReadBlock(DataBlocksBitmap.Buf(), DataBlocksBitmapBlockIndex);
-            }
+            TBlockGroup(size_t inFileOffset, ui32 inodeOffset, TDirectIoFile& file, const TSuperBlock& sb);
+            ~TBlockGroup();
 
-            ~TBlockGroup() {
-                Flush();
-            }
+            TInode AllocateInode();
+            void DeallocateInode(const TInode& inode);
 
-            TInode AllocateInode() {
-                i32 idx = InodesBitmap.FindUnset();
-                Y_ENSURE(idx != -1);
-                InodesBitmap.Set(idx);
-
-                TInode inode;
-                inode.Id = idx + InodeIndexOffset;
-                return inode;
-            }
-
-            void DeallocateInode(const TInode& inode) {
-                // TODO Y_ASSERT
-                auto idx = inode.Id - InodeIndexOffset;
-                Y_ENSURE(InodesBitmap.Test(idx));
-                InodesBitmap.Unset(idx);
-
-                // FIXME No inode on disk modification here
-            }
-
-            TInode ReadInode(ui32 id) {
-                // TODO Block Cache
-                auto buf = SuperBlock->NewBuffer();
-                File_.ReadBlock(buf, CalcInodeBlockIndex(id));
-
-                TBufInput in(buf);
-                in.SkipRead(CalcInodeInBlockOffset(id));
-                TInode inode;
-                inode.Deserialize(in);
-                inode.Id = id;
-                return inode;
-            }
-
-            void WriteInode(const TInode& inode) {
-                // TODO Block Cache
-                auto buf = SuperBlock->NewBuffer();
-                File_.ReadBlock(buf, CalcInodeBlockIndex(inode.Id));
-
-                TBufOutput out(buf);
-                out.SkipWrite(CalcInodeInBlockOffset(inode.Id));
-                inode.Serialize(out);
-
-                File_.WriteBlock(buf, CalcInodeBlockIndex(inode.Id));
-            }
+            TInode ReadInode(ui32 id);
+            void WriteInode(const TInode& inode);
 
         private:
             ui32 CalcInodeInBlockOffset(ui32 inodeId) const {
