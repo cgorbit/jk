@@ -108,8 +108,13 @@ void TestInodeAllocation() {
         }
 
         assert(bg.AllocateInode().Id == 20);
+
         bg.DeallocateInode({.Id = 7});
         assert(bg.AllocateInode().Id == 7);
+
+        bg.DeallocateInode({.Id = 13});
+        bg.DeallocateInode({.Id = 17});
+        assert(bg.AllocateInode().Id == 13);
     }
 }
 
