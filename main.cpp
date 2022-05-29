@@ -106,6 +106,10 @@ void TestInodeAllocation() {
             assert(inode.Id == i);
             assert(inode.CreationTime == i);
         }
+
+        assert(bg.AllocateInode().Id == 20);
+        bg.DeallocateInode({.Id = 7});
+        assert(bg.AllocateInode().Id == 7);
     }
 }
 

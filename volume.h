@@ -127,6 +127,15 @@ namespace NJK {
                 return inode;
             }
 
+            void DeallocateInode(const TInode& inode) {
+                // TODO Y_ASSERT
+                auto idx = inode.Id - InodeIndexOffset;
+                Y_ENSURE(InodesBitmap.Test(idx));
+                InodesBitmap.Unset(idx);
+
+                // FIXME No inode on disk modification here
+            }
+
             TInode ReadInode(ui32 id) {
                 // TODO Block Cache
                 auto buf = SuperBlock->NewBuffer();

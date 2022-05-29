@@ -31,7 +31,7 @@ namespace NJK {
 
         bool Test(size_t pos) const {
             const auto& b = reinterpret_cast<const std::byte&>(Buf_.Data()[pos / 8]);
-            return static_cast<bool>(b & static_cast<std::byte>(1 << (pos % 8)));
+            return static_cast<bool>(b & static_cast<std::byte>(1 << (pos % 8))) != 0;
         }
 
         void Set(size_t pos, bool value = true) {
@@ -41,6 +41,10 @@ namespace NJK {
             } else {
                 b &= static_cast<std::byte>(0b11111111 ^ (1 << (pos % 8)));
             }
+        }
+
+        void Unset(size_t pos) {
+            Set(pos, false);
         }
 
         const TFixedBuffer& Buf() const {
