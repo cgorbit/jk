@@ -14,8 +14,29 @@
 #include <fstream>
 #include <filesystem>
 #include <memory>
+#include <variant>
 
 namespace NJK {
+
+    struct TBlobView {
+        TBlobView() {
+        }
+
+        TBlobView(const std::string& s)
+            : Ptr(s.data())
+            , Size(s.size())
+        {
+        }
+
+        TBlobView(const char* ptr, size_t size)
+            : Ptr(ptr)
+            , Size(size)
+        {
+        }
+
+        const char* Ptr{};
+        size_t Size = 0;
+    };
 
     // Limits: up to several terrabytes (10 for example)
     //   => 5000 files (TMetaGroups)
@@ -69,20 +90,50 @@ namespace NJK {
             // in-memory
             ui32 Id = 0;
 
-            // on-disk
-            enum class EType: ui32 {
+            enum class EType: ui8 {
+                None,
+                Ui32,
+                Ui64,
+                Float,
+                Double,
+                String,
+                Blob,
             };
-            EType Type{};
-            ui32 BlockCount = 0; // bool Inline = true;
+
+            // on-disk
             ui32 CreationTime{};
             ui32 ModTime{};
+            struct {
+                EType Type{};
+                ui16 BlockCount = 0; // up to 256 MiB
+                ui32 FirstBlockId = 0;
+                ui32 Deadline = 0;
+            } Val;
+            struct {
+                bool HasChildren = false;
+                ui16 BlockCount = 0; // FIXME ui8 is enough
+                ui32 FirstBlockId = 0;
+            } Dir;
+            char Data[38] = {0};
+
+            static constexpr ui32 ToSkip = 0;
 
             void Serialize(IOutputStream& out) const {
-                SerializeMany(out, Type, BlockCount, CreationTime, ModTime, TSkipMe{48});
+                SerializeMany(out,
+                    CreationTime, ModTime,
+                    Val.Type, Val.BlockCount, Val.FirstBlockId, Val.Deadline,
+                    Dir.HasChildren, Dir.BlockCount, Dir.FirstBlockId,
+                    Data,
+                    TSkipMe{ToSkip});
             }
 
             void Deserialize(IInputStream& in) {
-                DeserializeMany(in, Type, BlockCount, CreationTime, ModTime, TSkipMe{48});
+                DeserializeMany(in,
+                    CreationTime, ModTime,
+                    Val.Type, Val.BlockCount, Val.FirstBlockId, Val.Deadline,
+                    Dir.HasChildren, Dir.BlockCount, Dir.FirstBlockId,
+                    Data,
+                    TSkipMe{ToSkip});
             }
 
             static constexpr ui32 OnDiskSize = 64;
@@ -167,6 +218,44 @@ namespace NJK {
 
             // FIXME Inodes Cache?
 
+        };
+
+        class TInodeDataOps {
+        public:
+            using TValue = std::variant<bool, i32, ui32, int64_t, uint64_t, float, double, std::string, TBlobView>;
+
+            struct TDirEntry {
+                ui32 Id{};
+                std::string Name;
+
+                bool operator== (const TDirEntry& other) const {
+                    return Id == other.Id && Name == other.Name;
+                }
+            };
+
+            TInodeDataOps(TBlockGroup& group);
+
+            TInode AddChild(TInode& parent, const std::string& name);
+            void RemoveChild(TInode& parent, const std::string& name);
+            TInode LookupChild(TInode& parent, const std::string& name);
+            std::vector<TDirEntry> ListChildren(TInode& parent);
+
+            void SetValue(TInode& parent, const TValue& value, const ui32 deadline = 0);
+            void UnsetValue(TInode& inode);
+
+        private:
+            // TODO Write Deserialization of:
+            // 1. std::string
+            // 2. TDirEntry
+            std::vector<TDirEntry> DeserializeDirectoryEntries(const TFixedBuffer& buf);
+            void SerializeDirectoryEntries(TFixedBuffer& buf, const std::vector<TDirEntry>& entries);
+
+        private:
+            // TODO We must operate on whole TVolume here,
+            //      because inodes lives on specific Block Groups
+            //      but data may lay anywhere
+            TBlockGroup& Group_;
+            //TVolume& Volume_;
         };
 
         struct TBlockGroupDescr {

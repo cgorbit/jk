@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <memory>
+#include <cstring>
 
 namespace NJK {
 
@@ -43,6 +44,10 @@ namespace NJK {
             TFixedBuffer tmp(std::move(other));
             Swap(tmp);
             return *this;
+        }
+
+        void FillZeroes() {
+            std::memset(Data(), 0, Size());
         }
 
         size_t Size() const {

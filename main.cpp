@@ -84,7 +84,7 @@ void TestInodeAllocation() {
             auto inode = bg.AllocateInode();
             assert(inode.Id == i);
             inode.CreationTime = i;
-            inode.BlockCount = i;
+            inode.Val.BlockCount = i;
             bg.WriteInode(inode);
         }
     }
@@ -192,6 +192,63 @@ void TestDataBlockAllocation() {
     }
 }
 
+void TestInodeDataOps() {
+    using namespace NJK;
+
+    const std::string volumePath = "./var/volume_inode_data_ops";
+    std::filesystem::remove_all(volumePath);
+    {
+        TVolume vol(volumePath, {});
+        auto& meta = *vol.MetaGroups_[0];
+        if (meta.AliveBlockGroupCount == 0) {
+            meta.AllocateNewBlockGroup();
+        }
+        auto& bg = *meta.BlockGroups[0];
+
+        TVolume::TInodeDataOps ops(bg);
+
+        auto root = bg.AllocateInode();
+
+        ops.AddChild(root, "bin");
+        ops.AddChild(root, "sbin");
+        ops.AddChild(root, "root");
+        auto home = ops.AddChild(root, "home");
+        ops.AddChild(root, "etc");
+
+        auto trofimenkov = ops.AddChild(home, "trofimenkov");
+        ops.AddChild(home, "snowball");
+
+        ops.AddChild(trofimenkov, ".vim");
+    }
+
+    {
+        TVolume vol(volumePath, {});
+        auto& meta = *vol.MetaGroups_[0];
+        auto& bg = *meta.BlockGroups[0];
+        TVolume::TInodeDataOps ops(bg);
+
+        auto root = bg.ReadInode(0);
+        auto got0 = ops.ListChildren(root);
+        const std::vector<TVolume::TInodeDataOps::TDirEntry> expect0{{ 1, "bin" }, { 2, "sbin" }, { 3, "root" }, { 4, "home" }, { 5, "etc" }};
+        assert(expect0 == got0);
+
+        auto home = bg.ReadInode(4);
+        auto got1 = ops.ListChildren(home);
+        const std::vector<TVolume::TInodeDataOps::TDirEntry> expect1{{ 6, "trofimenkov" }, { 7, "snowball" }};
+        assert(expect1 == got1);
+
+        auto trofimenkov = bg.ReadInode(6);
+        auto got2 = ops.ListChildren(trofimenkov);
+        const std::vector<TVolume::TInodeDataOps::TDirEntry> expect2{{ 8, ".vim" } };
+        assert(expect2 == got2);
+
+        ops.RemoveChild(root, "root");
+        auto got3 = ops.ListChildren(root);
+        const std::vector<TVolume::TInodeDataOps::TDirEntry> expect3{{ 1, "bin" }, { 2, "sbin" }, { 4, "home" }, { 5, "etc" }};
+        assert(expect3 == got3);
+    }
+}
+
 int main() {
     using namespace NJK;
 
@@ -204,6 +261,7 @@ int main() {
 
     TestInodeAllocation();
     TestDataBlockAllocation();
+    TestInodeDataOps();
 
     TVolume vol("./var/volume1", {});
     (void)vol;

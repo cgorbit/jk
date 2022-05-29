@@ -32,5 +32,6 @@ namespace NJK {
     #define Y_SYSCALL(expr) \
         if ((expr) == -1) { throw std::system_error(errno, std::generic_category(), std::string(#expr)); }
 
+    #define Y_FAIL(msg) throw std::runtime_error(msg)
 
 }

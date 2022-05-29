@@ -20,6 +20,42 @@ namespace NJK {
         std::swap(buf[0], buf[1]);
     }
 
+    template <typename T, std::enable_if_t<std::is_same_v<T, ui8>, bool> = true>
+    inline void Deserialize(IInputStream& in, ui8& v) {
+        in.Load((char*)&v, 1);
+    }
+    inline void Deserialize(IInputStream& in, ui8& v) {
+        in.Load((char*)&v, 1);
+    }
+
+    template <typename T, std::enable_if_t<std::is_same_v<T, ui8>, bool> = true>
+    inline void Serialize(IOutputStream& out, const ui8& v) {
+        out.Save((const char*)&v, 1);
+    }
+    inline void Serialize(IOutputStream& out, const ui8& v) {
+        out.Save((const char*)&v, 1);
+    }
+
+    inline void Deserialize(IInputStream& in, bool& v) {
+        char c{};
+        in.Load(&c, 1);
+        v = c == 1;
+    }
+    inline void Serialize(IOutputStream& out, bool v) {
+        const char c = v ? 1 : 0;
+        out.Save(&c, 1);
+    }
+
+    template <size_t N>
+    inline void Serialize(IOutputStream& out, const char (&arr)[N]) {
+        out.Save(arr, N);
+    }
+
+    template <size_t N>
+    inline void Deserialize(IInputStream& in, char (&arr)[N]) {
+        in.Load(arr, N);
+    }
+
     template <typename T>
     constexpr bool is_multibyte_integral_v = sizeof(T) != 1 && std::is_integral_v<T>;
 
