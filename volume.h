@@ -15,6 +15,7 @@
 #include <filesystem>
 #include <memory>
 #include <variant>
+#include <optional>
 
 namespace NJK {
 
@@ -237,7 +238,7 @@ namespace NJK {
 
             TInode AddChild(TInode& parent, const std::string& name);
             void RemoveChild(TInode& parent, const std::string& name);
-            TInode LookupChild(TInode& parent, const std::string& name);
+            std::optional<TInode> LookupChild(TInode& parent, const std::string& name);
             std::vector<TDirEntry> ListChildren(TInode& parent);
 
             void SetValue(TInode& parent, const TValue& value, const ui32 deadline = 0);

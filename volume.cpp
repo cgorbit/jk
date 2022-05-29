@@ -246,9 +246,23 @@ namespace NJK {
         return DeserializeDirectoryEntries(data.Buf);
     }
 
-    TVolume::TInode TVolume::TInodeDataOps::LookupChild(TInode& parent, const std::string& name) {
-        Y_FAIL("todo");
-        return {};
+    std::optional<TVolume::TInode> TVolume::TInodeDataOps::LookupChild(TInode& parent, const std::string& name) {
+        if (!parent.Dir.HasChildren) {
+            return {};
+        }
+        Y_ENSURE(parent.Dir.BlockCount != 0);
+
+        auto data = Group_.ReadDataBlock(parent.Dir.FirstBlockId);
+        auto children = DeserializeDirectoryEntries(data.Buf); // TODO We can lookup without full deserialization
+
+        // TODO Optimize
+        auto it = std::find_if(children.begin(), children.end(), [&](const TDirEntry& c) { return c.Name == name; });
+        if (it == children.end()) {
+            return {};
+        }
+
+        auto child = *it;
+        return Group_.ReadInode(child.Id);
     }
 
     void TVolume::TInodeDataOps::SetValue(TInode& parent, const TValue& value, const ui32 deadline) {

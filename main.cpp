@@ -237,6 +237,9 @@ void TestInodeDataOps() {
         const std::vector<TVolume::TInodeDataOps::TDirEntry> expect1{{ 6, "trofimenkov" }, { 7, "snowball" }};
         assert(expect1 == got1);
 
+        assert(ops.LookupChild(home, "snowball")->Id == 7);
+        assert(!ops.LookupChild(home, "sdf").has_value());
+
         auto trofimenkov = bg.ReadInode(6);
         auto got2 = ops.ListChildren(trofimenkov);
         const std::vector<TVolume::TInodeDataOps::TDirEntry> expect2{{ 8, ".vim" } };
@@ -246,6 +249,9 @@ void TestInodeDataOps() {
         auto got3 = ops.ListChildren(root);
         const std::vector<TVolume::TInodeDataOps::TDirEntry> expect3{{ 1, "bin" }, { 2, "sbin" }, { 4, "home" }, { 5, "etc" }};
         assert(expect3 == got3);
+
+        assert(ops.LookupChild(root, "home")->Id == 4);
+        assert(ops.LookupChild(root, "sbin")->Id == 2);
     }
 }
 
