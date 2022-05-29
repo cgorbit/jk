@@ -86,6 +86,7 @@ namespace NJK {
             }
 
             static constexpr ui32 OnDiskSize = 64;
+            static_assert(512 % OnDiskSize == 0);
         };
 
         struct TDataBlock {
@@ -116,7 +117,17 @@ namespace NJK {
             TInode ReadInode(ui32 id);
             void WriteInode(const TInode& inode);
 
+            TDataBlock AllocateDataBlock();
+            void DeallocateDataBlock(const TDataBlock&);
+
+            TDataBlock ReadDataBlock(ui32 id);
+            void WriteDataBlock(const TDataBlock&);
+
         private:
+            TFixedBuffer NewBuffer() {
+                return SuperBlock->NewBuffer();
+            }
+
             ui32 CalcInodeInBlockOffset(ui32 inodeId) const {
                 return (inodeId - InodeIndexOffset) * TInode::OnDiskSize % SuperBlock->BlockSize;
             }
@@ -124,10 +135,9 @@ namespace NJK {
                 return 2 + (inodeId - InodeIndexOffset) * TInode::OnDiskSize / SuperBlock->BlockSize;
             }
 
-            ui32 CalcDataBlockIndex(ui32 inodeId) const {
-                // ...
-                return 0; // TODO
-                //return 2 + (inodeId - InodeIndexOffset) * TInode::OnDiskSize / SuperBlock->BlockSize;
+            ui32 CalcDataBlockIndex(ui32 blockId) const {
+                const ui32 inodeBlocks = SuperBlock->BlockGroupInodeCount * TInode::OnDiskSize / SuperBlock->BlockSize;
+                return 2 + inodeBlocks + (blockId - DataBlockIndexOffset);
             }
 
             void Flush() {
@@ -144,6 +154,7 @@ namespace NJK {
             // in-memory only
             //ui32 InFileOffset = 0;
             const ui32 InodeIndexOffset = 0;
+            const ui32 DataBlockIndexOffset = 0;
 
             // in-memory only
             //ui32 FreeInodeCount = 0;
@@ -171,6 +182,7 @@ namespace NJK {
             } D;
 
             static constexpr ui32 OnDiskSize = 16; // TODO
+            static_assert(512 % OnDiskSize == 0);
 
             void Serialize(IOutputStream& out) const;
             void Deserialize(IInputStream& in);

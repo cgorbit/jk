@@ -55,9 +55,11 @@ namespace NJK {
         : SuperBlock(&sb)
         , File_(file, sb.BlockSize, inFileOffset)
         , InodeIndexOffset(inodeOffset)
-        , InodesBitmap(SuperBlock->NewBuffer())
-        , DataBlocksBitmap(SuperBlock->NewBuffer())
+        , DataBlockIndexOffset(inodeOffset)
+        , InodesBitmap(NewBuffer())
+        , DataBlocksBitmap(NewBuffer())
     {
+        Y_ENSURE(SuperBlock->BlockGroupInodeCount == SuperBlock->BlockGroupDataBlockCount);
         File_.ReadBlock(InodesBitmap.Buf(), InodesBitmapBlockIndex);
         File_.ReadBlock(DataBlocksBitmap.Buf(), DataBlocksBitmapBlockIndex);
     }
@@ -66,8 +68,11 @@ namespace NJK {
         Flush();
     }
 
+    /*
+        Inode management
+    */
     TVolume::TInode TVolume::TBlockGroup::AllocateInode() {
-        i32 idx = InodesBitmap.FindUnset();
+        const i32 idx = InodesBitmap.FindUnset();
         Y_ENSURE(idx != -1);
         InodesBitmap.Set(idx);
 
@@ -87,7 +92,7 @@ namespace NJK {
 
     TVolume::TInode TVolume::TBlockGroup::ReadInode(ui32 id) {
         // TODO Block Cache
-        auto buf = SuperBlock->NewBuffer();
+        auto buf = NewBuffer();
         File_.ReadBlock(buf, CalcInodeBlockIndex(id));
 
         TBufInput in(buf);
@@ -100,7 +105,7 @@ namespace NJK {
 
     void TVolume::TBlockGroup::WriteInode(const TInode& inode) {
         // TODO Block Cache
-        auto buf = SuperBlock->NewBuffer();
+        auto buf = NewBuffer();
         File_.ReadBlock(buf, CalcInodeBlockIndex(inode.Id));
 
         TBufOutput out(buf);
@@ -108,5 +113,44 @@ namespace NJK {
         inode.Serialize(out);
 
         File_.WriteBlock(buf, CalcInodeBlockIndex(inode.Id));
+    }
+
+    /*
+        Data Block management
+
+        TODO Generalize management of data and inodes into separate class
+    */
+
+    TVolume::TDataBlock TVolume::TBlockGroup::AllocateDataBlock() {
+        const i32 idx = DataBlocksBitmap.FindUnset();
+        Y_ENSURE(idx != -1);
+        DataBlocksBitmap.Set(idx);
+
+        TDataBlock block{.Buf = NewBuffer()};
+        block.Id = idx + DataBlockIndexOffset;
+        return block;
+    }
+
+    void TVolume::TBlockGroup::DeallocateDataBlock(const TDataBlock& block) {
+        // TODO Y_ASSERT
+        auto idx = block.Id - DataBlockIndexOffset;
+        Y_ENSURE(DataBlocksBitmap.Test(idx));
+        DataBlocksBitmap.Unset(idx);
+
+        // FIXME No block on disk modification here
+    }
+
+    TVolume::TDataBlock TVolume::TBlockGroup::ReadDataBlock(ui32 id) {
+        // TODO Block Cache
+        auto buf = NewBuffer();
+        File_.ReadBlock(buf, CalcDataBlockIndex(id));
+        TDataBlock block{.Buf = std::move(buf)};
+        block.Id = id;
+        return block;
+    }
+
+    void TVolume::TBlockGroup::WriteDataBlock(const TDataBlock& block) {
+        // TODO Block Cache
+        File_.WriteBlock(block.Buf, CalcDataBlockIndex(block.Id));
     }
 }

@@ -128,6 +128,70 @@ void TestInodeAllocation() {
     }
 }
 
+void TestDataBlockAllocation() {
+    using namespace NJK;
+
+    const std::string volumePath = "./var/volume_data";
+    std::filesystem::remove_all(volumePath);
+    {
+        TVolume vol(volumePath, {});
+
+        auto& meta = *vol.MetaGroups_[0];
+        if (meta.AliveBlockGroupCount == 0) {
+            meta.AllocateNewBlockGroup();
+        }
+
+        auto& bg = *meta.BlockGroups[0];
+
+        for (size_t i = 0; i < 10; ++i) {
+            auto block = bg.AllocateDataBlock();
+            assert(block.Id == i);
+            block.Buf.Data()[100] = i;
+            block.Buf.Data()[10] = i;
+            bg.WriteDataBlock(block);
+        }
+    }
+
+    {
+        TVolume vol(volumePath, {});
+
+        auto& meta = *vol.MetaGroups_[0];
+        assert(meta.AliveBlockGroupCount = 1);
+
+        auto& bg = *meta.BlockGroups[0];
+
+        for (size_t i = 0; i < 10; ++i) {
+            auto inode = bg.AllocateDataBlock();
+            assert(inode.Id == 10 + i);
+        }
+        for (size_t i = 0; i < 10; ++i) {
+            auto inode = bg.ReadDataBlock(i);
+            assert(inode.Id == i);
+            assert(inode.Buf.Data()[10] == i);
+            assert(inode.Buf.Data()[100] == i);
+        }
+
+        assert(bg.AllocateDataBlock().Id == 20);
+
+        bg.DeallocateDataBlock({.Id = 7, .Buf = TFixedBuffer::Aligned(4096)});
+        assert(bg.AllocateDataBlock().Id == 7);
+
+        bg.DeallocateDataBlock({.Id = 13, .Buf = TFixedBuffer::Aligned(4096)});
+        bg.DeallocateDataBlock({.Id = 17, .Buf = TFixedBuffer::Aligned(4096)});
+    }
+
+    {
+        TVolume vol(volumePath, {});
+
+        auto& meta = *vol.MetaGroups_[0];
+        assert(meta.AliveBlockGroupCount = 1);
+
+        auto& bg = *meta.BlockGroups[0];
+
+        assert(bg.AllocateDataBlock().Id == 13);
+    }
+}
+
 int main() {
     using namespace NJK;
 
@@ -139,6 +203,7 @@ int main() {
     CheckOnDiskSize<TVolume::TBlockGroupDescr>();
 
     TestInodeAllocation();
+    TestDataBlockAllocation();
 
     TVolume vol("./var/volume1", {});
     (void)vol;
