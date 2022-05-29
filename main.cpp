@@ -114,6 +114,16 @@ void TestInodeAllocation() {
 
         bg.DeallocateInode({.Id = 13});
         bg.DeallocateInode({.Id = 17});
+    }
+
+    {
+        TVolume vol(volumePath, {});
+
+        auto& meta = *vol.MetaGroups_[0];
+        assert(meta.AliveBlockGroupCount = 1);
+
+        auto& bg = *meta.BlockGroups[0];
+
         assert(bg.AllocateInode().Id == 13);
     }
 }
