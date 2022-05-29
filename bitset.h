@@ -1,6 +1,8 @@
 #pragma once
 
 #include "fixed_buffer.h"
+#include "common.h"
+
 #include <cstddef>
 
 namespace NJK {
@@ -17,6 +19,8 @@ namespace NJK {
             //delete[] Page_;
         }
 
+        i32 FindUnset() const;
+
         //bool IsAllocated() const {
         //    //return Page_ != nullptr;
         //}
@@ -25,12 +29,12 @@ namespace NJK {
         //    Page_ = new std::byte[ByteSize];
         //}
 
-        bool test(size_t pos) const {
+        bool Test(size_t pos) const {
             const auto& b = reinterpret_cast<const std::byte&>(Buf_.Data()[pos / 8]);
             return static_cast<bool>(b & static_cast<std::byte>(1 << (pos % 8)));
         }
 
-        void set(size_t pos, bool value = true) {
+        void Set(size_t pos, bool value = true) {
             auto& b = reinterpret_cast<std::byte&>(Buf_.Data()[pos / 8]);
             if (value) {
                 b |= static_cast<std::byte>(1 << (pos % 8));

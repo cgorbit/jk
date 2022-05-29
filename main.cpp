@@ -65,6 +65,50 @@ void CheckOnDiskSize() {
     DeserializeChecked(in, dst);
 }
 
+void TestInodeAllocation() {
+    using namespace NJK;
+
+    const std::string volumePath = "./var/volume_inodes";
+    std::filesystem::remove_all(volumePath);
+    {
+        TVolume vol(volumePath, {});
+
+        auto& meta = *vol.MetaGroups_[0];
+        if (meta.AliveBlockGroupCount == 0) {
+            meta.AllocateNewBlockGroup();
+        }
+
+        auto& bg = *meta.BlockGroups[0];
+
+        for (size_t i = 0; i < 10; ++i) {
+            auto inode = bg.AllocateInode();
+            assert(inode.Id == i);
+            inode.CreationTime = i;
+            inode.BlockCount = i;
+            bg.WriteInode(inode);
+        }
+    }
+
+    {
+        TVolume vol(volumePath, {});
+
+        auto& meta = *vol.MetaGroups_[0];
+        assert(meta.AliveBlockGroupCount = 1);
+
+        auto& bg = *meta.BlockGroups[0];
+
+        for (size_t i = 0; i < 10; ++i) {
+            auto inode = bg.AllocateInode();
+            assert(inode.Id == 10 + i);
+        }
+        for (size_t i = 0; i < 10; ++i) {
+            auto inode = bg.ReadInode(i);
+            assert(inode.Id == i);
+            assert(inode.CreationTime == i);
+        }
+    }
+}
+
 int main() {
     using namespace NJK;
 
@@ -75,20 +119,11 @@ int main() {
     CheckOnDiskSize<TVolume::TInode>();
     CheckOnDiskSize<TVolume::TBlockGroupDescr>();
 
+    TestInodeAllocation();
+
     TVolume vol("./var/volume1", {});
     (void)vol;
 
-    auto& meta = *vol.MetaGroups_[0];
-    if (meta.AliveBlockGroupCount == 0) {
-        meta.AllocateNewBlockGroup();
-    }
-
-    auto& bg = *meta.BlockGroups[0];
-    auto inode = bg.ReadInode(10);
-    inode.CreationTime = NowSeconds();
-    inode.BlockCount = 500;
-
-    bg.WriteInode(inode, 10); // FIXME Store inodeid in in-memory version
 
     return 0;
 }

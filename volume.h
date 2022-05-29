@@ -66,9 +66,12 @@ namespace NJK {
         };
 
         struct TInode {
+            // in-memory
+            ui32 Id = 0;
+
+            // on-disk
             enum class EType: ui32 {
             };
-            //bool Used = false; See in bitmap
             EType Type{};
             ui32 BlockCount = 0; // bool Inline = true;
             ui32 CreationTime{};
@@ -114,6 +117,16 @@ namespace NJK {
                 Flush();
             }
 
+            TInode AllocateInode() {
+                i32 idx = InodesBitmap.FindUnset();
+                Y_ENSURE(idx != -1);
+                InodesBitmap.Set(idx);
+
+                TInode inode;
+                inode.Id = idx + InodeIndexOffset;
+                return inode;
+            }
+
             TInode ReadInode(ui32 id) {
                 // TODO Block Cache
                 auto buf = SuperBlock->NewBuffer();
@@ -123,19 +136,20 @@ namespace NJK {
                 in.SkipRead(CalcInodeInBlockOffset(id));
                 TInode inode;
                 inode.Deserialize(in);
+                inode.Id = id;
                 return inode;
             }
 
-            void WriteInode(const TInode& inode, ui32 id) {
+            void WriteInode(const TInode& inode) {
                 // TODO Block Cache
                 auto buf = SuperBlock->NewBuffer();
-                File_.ReadBlock(buf, CalcInodeBlockIndex(id));
+                File_.ReadBlock(buf, CalcInodeBlockIndex(inode.Id));
 
                 TBufOutput out(buf);
-                out.SkipWrite(CalcInodeInBlockOffset(id));
+                out.SkipWrite(CalcInodeInBlockOffset(inode.Id));
                 inode.Serialize(out);
 
-                File_.WriteBlock(buf, CalcInodeBlockIndex(id));
+                File_.WriteBlock(buf, CalcInodeBlockIndex(inode.Id));
             }
 
         private:
