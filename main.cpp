@@ -53,13 +53,15 @@ template <typename T>
 void CheckOnDiskSize() {
     using namespace NJK;
 
-    auto buf = TFixedBuffer::Aligned(4096);
+    //auto buf = TFixedBuffer::Aligned(4096);
     T src;
-    TBufOutput out(buf);
+    //TBufOutput out(buf);
+    TNullOutput out;
     SerializeChecked(out, src);
 
-    TVolume::TSuperBlock dst;
-    TBufInput in(buf);
+    T dst;
+    //TBufInput in(buf);
+    TNullInput in;
     DeserializeChecked(in, dst);
 }
 

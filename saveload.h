@@ -51,6 +51,18 @@ namespace NJK {
         Deserialize<U>(out, reinterpret_cast<U&>(v));
     }
 
+    struct TSkipMe {
+        size_t Count = 0;
+    };
+
+    inline void Deserialize(IInputStream& out, const TSkipMe& v) {
+        out.SkipRead(v.Count);
+    }
+
+    inline void Serialize(IOutputStream& out, const TSkipMe& v) {
+        out.SkipWrite(v.Count);
+    }
+
     inline void DeserializeMany(IInputStream&) {
     }
 
@@ -116,6 +128,11 @@ namespace NJK {
             return ret;
         }
 
+        void SkipRead(size_t count) override {
+            Backend_->SkipRead(count);
+            BytesRead_ += count;
+        }
+
         size_t BytesRead() const {
             return BytesRead_;
         }
@@ -136,6 +153,11 @@ namespace NJK {
             auto ret = Backend_->Write(buf, count);
             BytesWritten_ += ret;
             return ret;
+        }
+
+        void SkipWrite(size_t count) override {
+            Backend_->SkipWrite(count);
+            BytesWritten_ += count;
         }
 
         size_t BytesWritten() const {

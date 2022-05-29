@@ -379,12 +379,11 @@ namespace NJK {
             ui32 ModTime{};
 
             void Serialize(IOutputStream& out) const {
-                SerializeMany(out, Type, BlockCount, CreationTime, ModTime);
-                out.SkipWrite(48);
+                SerializeMany(out, Type, BlockCount, CreationTime, ModTime, TSkipMe{48});
             }
+
             void Deserialize(IInputStream& in) {
-                DeserializeMany(in, Type, BlockCount, CreationTime, ModTime);
-                in.SkipRead(48);
+                DeserializeMany(in, Type, BlockCount, CreationTime, ModTime, TSkipMe{48});
             }
 
             static constexpr ui32 OnDiskSize = 64;

@@ -97,4 +97,23 @@ namespace NJK {
         size_t Pos_;
     };
 
+    class TNullOutput: public IOutputStream {
+    public:
+        size_t Write(const char*, size_t count) override {
+            return count;
+        }
+
+        void SkipWrite(size_t count) override {
+        }
+    };
+
+    class TNullInput: public IInputStream {
+    public:
+        size_t Read(char*, size_t count) override {
+            return count;
+        }
+
+        void SkipRead(size_t) override {
+        }
+    };
 }
