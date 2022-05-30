@@ -251,6 +251,15 @@ namespace NJK {
         return Group_.ReadInode(child.Id);
     }
 
+    // TODO OPTIMIZE, Do it in less movements
+    TVolume::TInode TVolume::TInodeDataOps::EnsureChild(TInode& parent, const std::string& name) {
+        auto child = LookupChild(parent, name);
+        if (child) {
+            return *child;
+        }
+        return AddChild(parent, name);
+    }
+
     void TVolume::TInodeDataOps::SetValue(TInode& inode, const TValue& value, const ui32 deadline) {
         if (const auto* v = std::get_if<std::monostate>(&value)) {
             UnsetValue(inode);

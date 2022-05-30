@@ -1,4 +1,6 @@
+#include "common.h"
 #include "volume.h"
+#include "storage.h"
 #include "fixed_buffer.h"
 #include <cassert>
 #include <iostream>
@@ -192,25 +194,26 @@ void TestDataBlockAllocation() {
     }
 }
 
+template <typename T>
+void AssertValue(const NJK::TVolume::TInode& inode, const T& expect, NJK::TVolume::TInodeDataOps& ops) {
+    auto sbinVal = ops.GetValue(inode);
+    auto sbinValPtr = std::get_if<T>(&sbinVal);
+    if (!sbinValPtr) {
+        throw std::runtime_error("Value not set");
+    }
+    if (*sbinValPtr != expect) {
+        std::stringstream s;
+        if constexpr (std::is_same_v<T, std::monostate>) {
+            s << "Values not equal";
+        } else {
+            s << "Values not equal: expect " << expect << ", got " << *sbinValPtr;
+        }
+        throw std::runtime_error(s.str());
+    }
+}
+
 void TestInodeDataOps() {
     using namespace NJK;
-
-    auto assertValue = []<typename T>(const TVolume::TInode& inode, const T& expect, TVolume::TInodeDataOps& ops) {
-        auto sbinVal = ops.GetValue(inode);
-        auto sbinValPtr = std::get_if<T>(&sbinVal);
-        if (!sbinValPtr) {
-            throw std::runtime_error("Value not set");
-        }
-        if (*sbinValPtr != expect) {
-            std::stringstream s;
-            if constexpr (std::is_same_v<T, std::monostate>) {
-                s << "Values not equal";
-            } else {
-                s << "Values not equal: expect " << expect << ", got " << *sbinValPtr;
-            }
-            throw std::runtime_error(s.str());
-        }
-    };
 
     const std::string volumePath = "./var/volume_inode_data_ops";
     std::filesystem::remove_all(volumePath);
@@ -276,8 +279,8 @@ void TestInodeDataOps() {
         auto sbin = ops.LookupChild(root, "sbin");
         assert(sbin.has_value() && sbin->Id == 2);
 
-        assertValue(*sbin, (ui32)777, ops);
-        assertValue(trofimenkov, std::string{"Handsome"}, ops);
+        AssertValue(*sbin, (ui32)777, ops);
+        AssertValue(trofimenkov, std::string{"Handsome"}, ops);
 
         ops.SetValue(trofimenkov, (float)1.46);
     }
@@ -290,8 +293,8 @@ void TestInodeDataOps() {
         auto trofimenkov = bg.ReadInode(6);
         auto sbin = bg.ReadInode(2);
 
-        assertValue(sbin, (ui32)777, ops);
-        assertValue(trofimenkov, (float)1.46, ops);
+        AssertValue(sbin, (ui32)777, ops);
+        AssertValue(trofimenkov, (float)1.46, ops);
 
         ops.UnsetValue(trofimenkov);
     }
@@ -306,9 +309,9 @@ void TestInodeDataOps() {
         auto sbin = bg.ReadInode(2);
         auto trofimenkov = bg.ReadInode(6);
 
-        assertValue(home, std::string{"Sweet Home"}, ops);
-        assertValue(sbin, (ui32)777, ops);
-        assertValue(trofimenkov, std::monostate{}, ops);
+        AssertValue(home, std::string{"Sweet Home"}, ops);
+        AssertValue(sbin, (ui32)777, ops);
+        AssertValue(trofimenkov, std::monostate{}, ops);
 
         ops.SetValue(trofimenkov, (ui32)1987);
     }
@@ -321,7 +324,39 @@ void TestInodeDataOps() {
 
         auto trofimenkov = bg.ReadInode(6);
 
-        assertValue(trofimenkov, (ui32)1987, ops);
+        AssertValue(trofimenkov, (ui32)1987, ops);
+    }
+}
+
+void AssertValuesEqual(const NJK::TInodeValue& lhs, const NJK::TInodeValue& rhs) {
+    using namespace NJK;
+
+    assert(lhs.index() == rhs.index());
+    if (std::holds_alternative<NJK::TBlobView>(lhs)) {
+        throw std::runtime_error("Can't compare TBlobView");
+    } else if (std::holds_alternative<std::string>(lhs)) {
+        assert(std::get<std::string>(lhs) == std::get<std::string>(rhs));
+    } else if (std::holds_alternative<ui32>(lhs)) {
+        assert(std::get<ui32>(lhs) == std::get<ui32>(rhs));
+    } else {
+        Y_FAIL("todo");
+    }
+}
+
+void TestStorage() {
+    using namespace NJK;
+    using TValue = TInodeValue;
+
+    const std::string volumePath = "./var/volume_storage";
+    std::filesystem::remove_all(volumePath);
+    {
+        TStorage storage({volumePath});
+
+        storage.Set("/home/trofimenkov/bar/.vimrc", (ui32)10);
+        storage.Set("/home/trofimenkov/bar", std::string{"Hello"});
+
+        AssertValuesEqual(storage.Get("/home/trofimenkov/bar/.vimrc"), TValue{(ui32)10});
+        AssertValuesEqual(storage.Get("/home/trofimenkov/bar"), TValue{std::string{"Hello"}});
     }
 }
 
@@ -339,9 +374,7 @@ int main() {
     TestDataBlockAllocation();
     TestInodeDataOps();
 
-    TVolume vol("./var/volume1", {});
-    (void)vol;
-
+    TestStorage();
 
     return 0;
 }

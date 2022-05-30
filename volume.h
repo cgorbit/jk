@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common.h"
+#include "volume_fwd.h"
 #include "bitset.h"
 #include "direct_io.h"
 #include "block_file.h"
@@ -18,26 +19,6 @@
 #include <optional>
 
 namespace NJK {
-
-    struct TBlobView {
-        TBlobView() {
-        }
-
-        TBlobView(const std::string& s)
-            : Ptr(s.data())
-            , Size(s.size())
-        {
-        }
-
-        TBlobView(const char* ptr, size_t size)
-            : Ptr(ptr)
-            , Size(size)
-        {
-        }
-
-        const char* Ptr{};
-        size_t Size = 0;
-    };
 
     // Limits: up to several terrabytes (10 for example)
     //   => 5000 files (TMetaGroups)
@@ -210,18 +191,7 @@ namespace NJK {
 
         class TInodeDataOps {
         public:
-            using TValue = std::variant<
-                std::monostate,
-                bool,
-                i32,
-                ui32,
-                int64_t,
-                uint64_t,
-                float,
-                double,
-                std::string,
-                TBlobView
-            >;
+            using TValue = TInodeValue;
 
             struct TDirEntry {
                 ui32 Id{};
@@ -237,6 +207,7 @@ namespace NJK {
             TInode AddChild(TInode& parent, const std::string& name);
             void RemoveChild(TInode& parent, const std::string& name);
             std::optional<TInode> LookupChild(TInode& parent, const std::string& name);
+            TInode EnsureChild(TInode& parent, const std::string& name);
             std::vector<TDirEntry> ListChildren(TInode& parent);
 
             void SetValue(TInode& inode, const TValue& value, const ui32 deadline = 0);
@@ -424,11 +395,24 @@ namespace NJK {
             std::vector<std::unique_ptr<TBlockGroup>> BlockGroups;
         };
 
-        TVolume(const std::string& dir, const TSettings& settings)
+        TVolume(const std::string& dir, const TSettings& settings, bool ensureRoot = false)
             : Directory_(dir)
         {
             InitSuperBlock(settings);
-            InitMetaGroups();
+            LoadMetaGroups();
+            if (MetaGroups_.empty()) {
+                MetaGroups_.push_back(CreateMetaGroup(0));
+                if (ensureRoot) {
+                    auto& meta = *MetaGroups_[0];
+                    meta.AllocateNewBlockGroup();
+                    auto& bg = *meta.BlockGroups[0];
+                    Y_ENSURE(bg.AllocateInode().Id == 0);
+                }
+            }
+        }
+
+        TInode GetRoot() {
+            return MetaGroups_[0]->BlockGroups[0]->ReadInode(0);
         }
 
         void InitSuperBlock(const TSettings& settings) {
@@ -454,17 +438,13 @@ namespace NJK {
             return std::make_unique<TMetaGroup>(MakeMetaGroupFilePath(idx), idx, SuperBlock_);
         }
 
-        void InitMetaGroups() {
+        void LoadMetaGroups() {
             for (size_t i = 0; i < 10'000; ++i) { // TODO
                 const auto path = MakeMetaGroupFilePath(i);
                 if (!std::filesystem::exists(path)) {
                     break;
                 }
                 MetaGroups_.push_back(std::make_unique<TMetaGroup>(path, i, SuperBlock_));
-            }
-
-            if (MetaGroups_.empty()) {
-                MetaGroups_.push_back(CreateMetaGroup(0));
             }
         }
 
