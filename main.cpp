@@ -356,7 +356,7 @@ void TestStorage() {
         storage.Set("/home/trofimenkov/bar", std::string{"Hello"});
 
         AssertValuesEqual(storage.Get("/home/trofimenkov/bar/.vimrc"), TValue{(ui32)10});
-        AssertValuesEqual(storage.Get("/home/trofimenkov/bar"), TValue{std::string{"Hello"}});
+        AssertValuesEqual(storage.Get("//home////trofimenkov/bar/"), TValue{std::string{"Hello"}});
     }
 }
 
