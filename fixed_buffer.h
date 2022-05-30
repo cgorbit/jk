@@ -25,6 +25,10 @@ namespace NJK {
             return ret;
         }
 
+        static TFixedBuffer Empty() {
+            return {};
+        }
+
         TFixedBuffer(const TFixedBuffer&) = delete;
 
         TFixedBuffer(TFixedBuffer&& other) {

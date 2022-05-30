@@ -9,15 +9,34 @@
 
 namespace NJK {
 
+    // TODO Optimize swaps
+
     inline void SwapBytes(ui32& v) {
         std::byte* buf = (std::byte*)&v;
         std::swap(buf[0], buf[3]);
         std::swap(buf[1], buf[2]);
     }
 
+    inline void SwapBytes(uint64_t& v) {
+        std::byte* buf = (std::byte*)&v;
+        std::swap(buf[0], buf[7]);
+        std::swap(buf[1], buf[6]);
+        std::swap(buf[2], buf[5]);
+        std::swap(buf[3], buf[4]);
+    }
     inline void SwapBytes(ui16& v) {
         std::byte* buf = (std::byte*)&v;
         std::swap(buf[0], buf[1]);
+    }
+
+    inline void SwapBytes(float& v) {
+        static_assert(sizeof(v) == 4);
+        SwapBytes(reinterpret_cast<ui32&>(v));
+    }
+
+    inline void SwapBytes(double& v) {
+        static_assert(sizeof(v) == 8);
+        SwapBytes(reinterpret_cast<uint64_t&>(v));
     }
 
     template <typename T, std::enable_if_t<std::is_same_v<T, ui8>, bool> = true>
@@ -57,7 +76,7 @@ namespace NJK {
     }
 
     template <typename T>
-    constexpr bool is_multibyte_integral_v = sizeof(T) != 1 && std::is_integral_v<T>;
+    constexpr bool is_multibyte_integral_v = sizeof(T) != 1 && (std::is_integral_v<T> || std::is_same_v<T, float> || std::is_same_v<T, double>);
 
     template <typename T, std::enable_if_t<is_multibyte_integral_v<T>, bool> = true>
     void Serialize(IOutputStream& out, T v) {
@@ -238,4 +257,18 @@ namespace NJK {
             }
         #endif
     }
+
+    #define Y_DECLARE_SERIALIZATION \
+        void Serialize(IOutputStream& out) const; \
+        void Deserialize(IInputStream& in);
+
+    #define Y_DEFINE_SERIALIZATION(type, ...) \
+        void type::Serialize(IOutputStream& out) const { \
+            SerializeMany(out, __VA_ARGS__); \
+        } \
+\
+        void type::Deserialize(IInputStream& in) { \
+            DeserializeMany(in, __VA_ARGS__); \
+        }
+
 }

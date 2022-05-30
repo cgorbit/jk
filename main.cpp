@@ -195,6 +195,23 @@ void TestDataBlockAllocation() {
 void TestInodeDataOps() {
     using namespace NJK;
 
+    auto assertValue = []<typename T>(const TVolume::TInode& inode, const T& expect, TVolume::TInodeDataOps& ops) {
+        auto sbinVal = ops.GetValue(inode);
+        auto sbinValPtr = std::get_if<T>(&sbinVal);
+        if (!sbinValPtr) {
+            throw std::runtime_error("Value not set");
+        }
+        if (*sbinValPtr != expect) {
+            std::stringstream s;
+            if constexpr (std::is_same_v<T, std::monostate>) {
+                s << "Values not equal";
+            } else {
+                s << "Values not equal: expect " << expect << ", got " << *sbinValPtr;
+            }
+            throw std::runtime_error(s.str());
+        }
+    };
+
     const std::string volumePath = "./var/volume_inode_data_ops";
     std::filesystem::remove_all(volumePath);
     {
@@ -210,7 +227,7 @@ void TestInodeDataOps() {
         auto root = bg.AllocateInode();
 
         ops.AddChild(root, "bin");
-        ops.AddChild(root, "sbin");
+        auto sbin = ops.AddChild(root, "sbin");
         ops.AddChild(root, "root");
         auto home = ops.AddChild(root, "home");
         ops.AddChild(root, "etc");
@@ -219,6 +236,10 @@ void TestInodeDataOps() {
         ops.AddChild(home, "snowball");
 
         ops.AddChild(trofimenkov, ".vim");
+
+        ops.SetValue(sbin, (ui32)777);
+        ops.SetValue(trofimenkov, std::string{"Handsome"});
+        ops.SetValue(home, std::string{"Sweet Home"});
     }
 
     {
@@ -251,7 +272,56 @@ void TestInodeDataOps() {
         assert(expect3 == got3);
 
         assert(ops.LookupChild(root, "home")->Id == 4);
-        assert(ops.LookupChild(root, "sbin")->Id == 2);
+
+        auto sbin = ops.LookupChild(root, "sbin");
+        assert(sbin.has_value() && sbin->Id == 2);
+
+        assertValue(*sbin, (ui32)777, ops);
+        assertValue(trofimenkov, std::string{"Handsome"}, ops);
+
+        ops.SetValue(trofimenkov, (float)1.46);
+    }
+    {
+        TVolume vol(volumePath, {});
+        auto& meta = *vol.MetaGroups_[0];
+        auto& bg = *meta.BlockGroups[0];
+        TVolume::TInodeDataOps ops(bg);
+
+        auto trofimenkov = bg.ReadInode(6);
+        auto sbin = bg.ReadInode(2);
+
+        assertValue(sbin, (ui32)777, ops);
+        assertValue(trofimenkov, (float)1.46, ops);
+
+        ops.UnsetValue(trofimenkov);
+    }
+
+    {
+        TVolume vol(volumePath, {});
+        auto& meta = *vol.MetaGroups_[0];
+        auto& bg = *meta.BlockGroups[0];
+        TVolume::TInodeDataOps ops(bg);
+
+        auto home = bg.ReadInode(4);
+        auto sbin = bg.ReadInode(2);
+        auto trofimenkov = bg.ReadInode(6);
+
+        assertValue(home, std::string{"Sweet Home"}, ops);
+        assertValue(sbin, (ui32)777, ops);
+        assertValue(trofimenkov, std::monostate{}, ops);
+
+        ops.SetValue(trofimenkov, (ui32)1987);
+    }
+
+    {
+        TVolume vol(volumePath, {});
+        auto& meta = *vol.MetaGroups_[0];
+        auto& bg = *meta.BlockGroups[0];
+        TVolume::TInodeDataOps ops(bg);
+
+        auto trofimenkov = bg.ReadInode(6);
+
+        assertValue(trofimenkov, (ui32)1987, ops);
     }
 }
 

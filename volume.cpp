@@ -3,48 +3,34 @@
 
 namespace NJK {
 
-    void TVolume::TSuperBlock::Serialize(IOutputStream& out) const {
-        ::NJK::Serialize(out, BlockSize);
-        ::NJK::Serialize(out, BlockGroupCount);
-        ::NJK::Serialize(out, MaxBlockGroupCount);
-        ::NJK::Serialize(out, BlockGroupSize);
-        ::NJK::Serialize(out, BlockGroupDescriptorsBlockCount);
-        ::NJK::Serialize(out, MetaGroupCount); // File count
-        ::NJK::Serialize(out, MaxFileSize);
-        ::NJK::Serialize(out, ZeroBlockGroupOffset);
-        ::NJK::Serialize(out, BlockGroupInodeCount);
-        ::NJK::Serialize(out, BlockGroupDataBlockCount);
-        ::NJK::Serialize(out, MetaGroupInodeCount);
-    }
+    Y_DEFINE_SERIALIZATION(TVolume::TSuperBlock,
+        BlockSize,
+        BlockGroupCount,
+        MaxBlockGroupCount,
+        BlockGroupSize,
+        BlockGroupDescriptorsBlockCount,
+        MetaGroupCount, // File count
+        MaxFileSize,
+        ZeroBlockGroupOffset,
+        BlockGroupInodeCount,
+        BlockGroupDataBlockCount,
+        MetaGroupInodeCount
+    );
 
-    void TVolume::TSuperBlock::Deserialize(IInputStream& in) {
-        DeserializeMany(in,
-            BlockSize,
-            BlockGroupCount,
-            MaxBlockGroupCount,
-            BlockGroupSize,
-            BlockGroupDescriptorsBlockCount,
-            MetaGroupCount, // File count
-            MaxFileSize,
-            ZeroBlockGroupOffset,
-            BlockGroupInodeCount,
-            BlockGroupDataBlockCount,
-            MetaGroupInodeCount
-        );
-    }
+    Y_DEFINE_SERIALIZATION(TVolume::TBlockGroupDescr,
+        D.CreationTime,
+        D.FreeInodeCount,
+        D.FreeDataBlockCount,
+        D.DirectoryCount
+    )
 
-    void TVolume::TBlockGroupDescr::Serialize(IOutputStream& out) const {
-        ::NJK::Serialize(out, D.CreationTime);
-        ::NJK::Serialize(out, D.FreeInodeCount);
-        ::NJK::Serialize(out, D.FreeDataBlockCount);
-        ::NJK::Serialize(out, D.DirectoryCount);
-    }
-    void TVolume::TBlockGroupDescr::Deserialize(IInputStream& in) {
-        ::NJK::Deserialize(in, D.CreationTime);
-        ::NJK::Deserialize(in, D.FreeInodeCount);
-        ::NJK::Deserialize(in, D.FreeDataBlockCount);
-        ::NJK::Deserialize(in, D.DirectoryCount);
-    }
+    Y_DEFINE_SERIALIZATION(TVolume::TInode,
+        CreationTime, ModTime,
+        Val.Type, Val.BlockCount, Val.FirstBlockId, Val.Deadline,
+        Dir.HasChildren, Dir.BlockCount, Dir.FirstBlockId,
+        Data,
+        TSkipMe{ToSkip}
+    )
 
 
     /*
@@ -265,12 +251,98 @@ namespace NJK {
         return Group_.ReadInode(child.Id);
     }
 
-    void TVolume::TInodeDataOps::SetValue(TInode& parent, const TValue& value, const ui32 deadline) {
-        Y_FAIL("todo");
+    void TVolume::TInodeDataOps::SetValue(TInode& inode, const TValue& value, const ui32 deadline) {
+        if (const auto* v = std::get_if<std::monostate>(&value)) {
+            UnsetValue(inode);
+            return;
+        }
+
+        auto data = inode.Val.BlockCount
+            ?  Group_.ReadDataBlock(inode.Val.FirstBlockId)
+            :  Group_.AllocateDataBlock();
+
+        const auto type = static_cast<TInode::EType>(value.index());
+        inode.Val.Type = type;
+
+        if (!inode.Val.BlockCount) {
+            inode.Val.BlockCount = 1;
+            inode.Val.FirstBlockId = data.Id;
+        }
+        Group_.WriteInode(inode); // TODO Until we have cache
+
+        TBufOutput out(data.Buf);
+        if (const auto* v = std::get_if<ui32>(&value)) {
+            Serialize(out, *v);
+        } else if (const auto* v = std::get_if<float>(&value)) {
+            Serialize(out, *v);
+        } else if (const auto* v = std::get_if<std::string>(&value)) {
+            ui16 len = v->size();
+            Serialize(out, len);
+            out.Save(v->data(), len);
+        } else {
+            Y_FAIL("todo");
+        }
+        Group_.WriteDataBlock(data);
+    }
+
+    TVolume::TInodeDataOps::TValue TVolume::TInodeDataOps::GetValue(const TInode& inode) {
+        if (inode.Val.Type == TInode::EType::Undefined) {
+            Y_ENSURE(!inode.Val.BlockCount);
+            return {};
+        }
+        Y_ENSURE(inode.Val.BlockCount);
+
+        auto data = Group_.ReadDataBlock(inode.Val.FirstBlockId);
+
+        using EType = TInode::EType;
+
+        TValue ret;
+        TBufInput in(data.Buf);
+        switch (inode.Val.Type) {
+        case EType::Ui32: {
+            ui32 val = 0;
+            Deserialize(in, val);
+            ret = val;
+        }
+            break;
+        case EType::Float: {
+            float val = 0;
+            Deserialize(in, val);
+            ret = val;
+        }
+            break;
+        case EType::String: {
+            std::string val;
+            ui16 len = 0;
+            Deserialize(in, len);
+            val.resize(len);
+            in.Load(val.data(), len);
+            ret = val;
+        }
+            break;
+        default:
+            Y_FAIL("TODO");
+        };
+
+        return ret;
     }
 
     void TVolume::TInodeDataOps::UnsetValue(TInode& inode) {
-        Y_FAIL("todo");
+        if (inode.Val.Type == TInode::EType::Undefined) {
+            Y_ENSURE(!inode.Val.BlockCount);
+            Y_ENSURE(inode.Val.FirstBlockId == 0);
+            return;
+        }
+        Y_ENSURE(inode.Val.BlockCount);
+
+        // TODO Why to read for deallocate?
+        auto data = Group_.ReadDataBlock(inode.Val.FirstBlockId);
+        Group_.DeallocateDataBlock(data);
+
+        inode.Val.Type = TInode::EType::Undefined;
+        inode.Val.BlockCount = 0;
+        inode.Val.FirstBlockId = 0;
+        Group_.WriteInode(inode); // TODO Until we have cache
     }
 
     std::vector<TVolume::TInodeDataOps::TDirEntry> TVolume::TInodeDataOps::DeserializeDirectoryEntries(const TFixedBuffer& buf) {

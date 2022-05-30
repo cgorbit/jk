@@ -77,8 +77,7 @@ namespace NJK {
             ui32 BlockGroupDataBlockCount = 0;
             ui32 MetaGroupInodeCount = 0;
 
-            void Serialize(IOutputStream& out) const;
-            void Deserialize(IInputStream& in);
+            Y_DECLARE_SERIALIZATION
 
             TFixedBuffer NewBuffer() const {
                 return TFixedBuffer::Aligned(BlockSize);
@@ -92,8 +91,11 @@ namespace NJK {
             ui32 Id = 0;
 
             enum class EType: ui8 {
-                None,
+                Undefined,
+                Bool,
+                i32,
                 Ui32,
+                i64,
                 Ui64,
                 Float,
                 Double,
@@ -109,6 +111,7 @@ namespace NJK {
                 ui16 BlockCount = 0; // up to 256 MiB
                 ui32 FirstBlockId = 0;
                 ui32 Deadline = 0;
+                // ui16 Version = 0; // TODO Generation
             } Val;
             struct {
                 bool HasChildren = false;
@@ -119,23 +122,7 @@ namespace NJK {
 
             static constexpr ui32 ToSkip = 0;
 
-            void Serialize(IOutputStream& out) const {
-                SerializeMany(out,
-                    CreationTime, ModTime,
-                    Val.Type, Val.BlockCount, Val.FirstBlockId, Val.Deadline,
-                    Dir.HasChildren, Dir.BlockCount, Dir.FirstBlockId,
-                    Data,
-                    TSkipMe{ToSkip});
-            }
-
-            void Deserialize(IInputStream& in) {
-                DeserializeMany(in,
-                    CreationTime, ModTime,
-                    Val.Type, Val.BlockCount, Val.FirstBlockId, Val.Deadline,
-                    Dir.HasChildren, Dir.BlockCount, Dir.FirstBlockId,
-                    Data,
-                    TSkipMe{ToSkip});
-            }
+            Y_DECLARE_SERIALIZATION
 
             static constexpr ui32 OnDiskSize = 64;
             static_assert(512 % OnDiskSize == 0);
@@ -223,7 +210,18 @@ namespace NJK {
 
         class TInodeDataOps {
         public:
-            using TValue = std::variant<bool, i32, ui32, int64_t, uint64_t, float, double, std::string, TBlobView>;
+            using TValue = std::variant<
+                std::monostate,
+                bool,
+                i32,
+                ui32,
+                int64_t,
+                uint64_t,
+                float,
+                double,
+                std::string,
+                TBlobView
+            >;
 
             struct TDirEntry {
                 ui32 Id{};
@@ -241,7 +239,8 @@ namespace NJK {
             std::optional<TInode> LookupChild(TInode& parent, const std::string& name);
             std::vector<TDirEntry> ListChildren(TInode& parent);
 
-            void SetValue(TInode& parent, const TValue& value, const ui32 deadline = 0);
+            void SetValue(TInode& inode, const TValue& value, const ui32 deadline = 0);
+            TValue GetValue(const TInode& inode);
             void UnsetValue(TInode& inode);
 
         private:
@@ -274,8 +273,7 @@ namespace NJK {
             static constexpr ui32 OnDiskSize = 16; // TODO
             static_assert(512 % OnDiskSize == 0);
 
-            void Serialize(IOutputStream& out) const;
-            void Deserialize(IInputStream& in);
+            Y_DECLARE_SERIALIZATION
         };
 
         // One data file up to 2 GiB by default
