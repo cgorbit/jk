@@ -35,7 +35,7 @@ namespace NJK {
         }
 
         void Set(size_t pos, bool value = true) {
-            auto& b = reinterpret_cast<std::byte&>(Buf_.Data()[pos / 8]);
+            auto& b = reinterpret_cast<std::byte&>(Buf_.MutableData()[pos / 8]);
             if (value) {
                 b |= static_cast<std::byte>(1 << (pos % 8));
             } else {

@@ -86,8 +86,10 @@ void TestInodeAllocation() {
             auto inode = bg.AllocateInode();
             assert(inode.Id == i);
             inode.CreationTime = i;
-            inode.Val.BlockCount = i;
+            inode.Val.BlockCount = i; // just set meaningless value
             bg.WriteInode(inode);
+
+            assert(bg.ReadInode(i).CreationTime == i);
         }
     }
 
@@ -107,6 +109,7 @@ void TestInodeAllocation() {
             auto inode = bg.ReadInode(i);
             assert(inode.Id == i);
             assert(inode.CreationTime == i);
+            assert(inode.Val.BlockCount == i);
         }
 
         assert(bg.AllocateInode().Id == 20);
@@ -146,11 +149,11 @@ void TestDataBlockAllocation() {
         auto& bg = *meta.BlockGroups[0];
 
         for (size_t i = 0; i < 10; ++i) {
-            auto block = bg.AllocateDataBlock();
-            assert(block.Id == i);
-            block.Buf.Data()[100] = i;
-            block.Buf.Data()[10] = i;
-            bg.WriteDataBlock(block);
+            auto blockId = bg.AllocateDataBlock();
+            assert(blockId == i);
+            auto block = bg.GetMutableDataBlock(blockId);
+            block.Buf().MutableData()[100] = i;
+            block.Buf().MutableData()[10] = i;
         }
     }
 
@@ -163,23 +166,22 @@ void TestDataBlockAllocation() {
         auto& bg = *meta.BlockGroups[0];
 
         for (size_t i = 0; i < 10; ++i) {
-            auto inode = bg.AllocateDataBlock();
-            assert(inode.Id == 10 + i);
+            auto blockId = bg.AllocateDataBlock();
+            assert(blockId == 10 + i);
         }
         for (size_t i = 0; i < 10; ++i) {
-            auto inode = bg.ReadDataBlock(i);
-            assert(inode.Id == i);
-            assert(inode.Buf.Data()[10] == i);
-            assert(inode.Buf.Data()[100] == i);
+            auto block = bg.GetDataBlock(i);
+            assert(block.Buf().Data()[10] == i);
+            assert(block.Buf().Data()[100] == i);
         }
 
-        assert(bg.AllocateDataBlock().Id == 20);
+        assert(bg.AllocateDataBlock() == 20);
 
-        bg.DeallocateDataBlock({.Id = 7, .Buf = TFixedBuffer::Aligned(4096)});
-        assert(bg.AllocateDataBlock().Id == 7);
+        bg.DeallocateDataBlock(7);
+        assert(bg.AllocateDataBlock() == 7);
 
-        bg.DeallocateDataBlock({.Id = 13, .Buf = TFixedBuffer::Aligned(4096)});
-        bg.DeallocateDataBlock({.Id = 17, .Buf = TFixedBuffer::Aligned(4096)});
+        bg.DeallocateDataBlock(13);
+        bg.DeallocateDataBlock(17);
     }
 
     {
@@ -190,7 +192,7 @@ void TestDataBlockAllocation() {
 
         auto& bg = *meta.BlockGroups[0];
 
-        assert(bg.AllocateDataBlock().Id == 13);
+        assert(bg.AllocateDataBlock() == 13);
     }
 }
 

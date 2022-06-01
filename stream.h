@@ -5,6 +5,9 @@
 #include <cstddef>
 #include <cstring>
 
+#include <iostream>
+#include <iomanip>
+
 namespace NJK {
 
     class IOutputStream {
@@ -13,6 +16,7 @@ namespace NJK {
 
         void Save(const char* buf, size_t count) {
             Y_ENSURE(Write(buf, count) == count);
+            //std::cerr << "++++ Write(" << (const void*)buf << ", " << count << ")\n";
         }
 
         virtual void SkipWrite(size_t count) {
@@ -27,6 +31,7 @@ namespace NJK {
 
         void Load(char* buf, size_t count) {
             Y_ENSURE(Read(buf, count) == count);
+            //std::cerr << "++++ Read(" << (const void*)buf << ", " << count << ")\n";
         }
 
         virtual void SkipRead(size_t count) {
@@ -34,6 +39,14 @@ namespace NJK {
             Y_ENSURE(Read(buf, count) == count);
         }
     };
+
+    inline void DumpBytes(const char *buf, size_t count) {
+        std::cerr << "[";
+        for (size_t i = 0; i < count; ++i) {
+            std::cerr << std::setw(2) << std::hex << (size_t)(unsigned char)buf[i] << ' ';
+        }
+        std::cerr << "]\n";
+    }
 
     class TBufOutput: public IOutputStream {
     public:
@@ -45,13 +58,16 @@ namespace NJK {
         }
 
         TBufOutput(TFixedBuffer& buf)
-            : TBufOutput(buf.Data(), buf.Size())
+            : TBufOutput(buf.MutableData(), buf.Size())
         {
         }
 
         size_t Write(const char* src, size_t count) override {
             Y_ENSURE(Pos_ + count <= Size_);
             std::memcpy(Buf_ + Pos_, src, count);
+            //std::cerr << "+++ TBufOutput.Write to " << (void*)(Buf_ + Pos_) << ", " << count << " bytes\n";
+            //DumpBytes(src, count);
+            //DumpBytes(Buf_ + Pos_, count);
             Pos_ += count;
             return count;
         }
@@ -83,6 +99,8 @@ namespace NJK {
         size_t Read(char* dst, size_t count) override {
             Y_ENSURE(Pos_ + count <= Size_);
             std::memcpy(dst, Buf_ + Pos_, count);
+            //std::cerr << "+++ TBufInput.Read from " << (void*)(Buf_ + Pos_) << ", " << count << " bytes\n";
+            //DumpBytes(dst, count);
             Pos_ += count;
             return count;
         }

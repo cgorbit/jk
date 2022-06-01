@@ -37,9 +37,9 @@ namespace NJK {
         TBlockGroup
     */
 
-    TVolume::TBlockGroup::TBlockGroup(size_t inFileOffset, ui32 inodeOffset, TDirectIoFile& file, const TSuperBlock& sb)
+    TVolume::TBlockGroup::TBlockGroup(size_t inFileOffset, ui32 inodeOffset, TCachedBlockFile& file, const TSuperBlock& sb)
         : SuperBlock(&sb)
-        , File_(file, sb.BlockSize, inFileOffset)
+        , File_(file, inFileOffset)
         , InodeIndexOffset(inodeOffset)
         , DataBlockIndexOffset(inodeOffset)
         , InodesBitmap(NewBuffer())
@@ -49,8 +49,9 @@ namespace NJK {
         DataBlocksBitmap.Buf().FillZeroes();
 
         Y_ENSURE(SuperBlock->BlockGroupInodeCount == SuperBlock->BlockGroupDataBlockCount);
-        File_.ReadBlock(InodesBitmap.Buf(), InodesBitmapBlockIndex);
-        File_.ReadBlock(DataBlocksBitmap.Buf(), DataBlocksBitmapBlockIndex);
+
+        File_.GetBlock(InodesBitmapBlockIndex).Buf().CopyTo(InodesBitmap.Buf());
+        File_.GetBlock(DataBlocksBitmapBlockIndex).Buf().CopyTo(DataBlocksBitmap.Buf());
     }
 
     TVolume::TBlockGroup::~TBlockGroup() {
@@ -68,7 +69,7 @@ namespace NJK {
         TInode inode;
         inode.Id = idx + InodeIndexOffset;
 
-        WriteInode(inode); // TODO Until we have cache
+        WriteInode(inode); // FIXME Don't write?
 
         return inode;
     }
@@ -83,11 +84,10 @@ namespace NJK {
     }
 
     TVolume::TInode TVolume::TBlockGroup::ReadInode(ui32 id) {
-        // TODO Block Cache
-        auto buf = NewBuffer();
-        File_.ReadBlock(buf, CalcInodeBlockIndex(id));
-
-        TBufInput in(buf);
+        auto block = File_.GetBlock(CalcInodeBlockIndex(id));
+        TBufInput in(block.Buf());
+        //std::cerr << "+ ReadInode: ID=" << id << ", page=" << (void*)block.Buf().Data()
+            //<< ", offset=" << CalcInodeInBlockOffset(id) << '\n';
         in.SkipRead(CalcInodeInBlockOffset(id));
         TInode inode;
         inode.Deserialize(in);
@@ -96,15 +96,12 @@ namespace NJK {
     }
 
     void TVolume::TBlockGroup::WriteInode(const TInode& inode) {
-        // TODO Block Cache
-        auto buf = NewBuffer();
-        File_.ReadBlock(buf, CalcInodeBlockIndex(inode.Id));
-
-        TBufOutput out(buf);
+        auto block = File_.GetMutableBlock(CalcInodeBlockIndex(inode.Id));
+        TBufOutput out(block.Buf());
         out.SkipWrite(CalcInodeInBlockOffset(inode.Id));
+        //std::cerr << "+ WriteInode: ID=" << inode.Id << ", page=" << (void*)block.Buf().Data()
+            //<< ", offset=" << CalcInodeInBlockOffset(inode.Id) << '\n';
         inode.Serialize(out);
-
-        File_.WriteBlock(buf, CalcInodeBlockIndex(inode.Id));
     }
 
     /*
@@ -113,42 +110,41 @@ namespace NJK {
         TODO Generalize management of data and inodes into separate class
     */
 
-    TVolume::TDataBlock TVolume::TBlockGroup::AllocateDataBlock() {
+    ui32 TVolume::TBlockGroup::AllocateDataBlock() {
         const i32 idx = DataBlocksBitmap.FindUnset();
         Y_ENSURE(idx != -1);
         DataBlocksBitmap.Set(idx);
 
-        TDataBlock block{.Buf = NewBuffer()};
-        block.Id = idx + DataBlockIndexOffset;
-        block.Buf.FillZeroes();
+        //TDataBlock block{.Buf = NewBuffer()};
+        //block.Id = idx + DataBlockIndexOffset;
+        //block.Buf.FillZeroes();
 
-        WriteDataBlock(block); // TODO Until we have cache
+        //WriteDataBlock(block); // TODO Until we have cache
 
-        return block;
+        return idx;
     }
 
-    void TVolume::TBlockGroup::DeallocateDataBlock(const TDataBlock& block) {
+    void TVolume::TBlockGroup::DeallocateDataBlock(ui32 id) {
         // TODO Y_ASSERT
-        auto idx = block.Id - DataBlockIndexOffset;
+        auto idx = id - DataBlockIndexOffset;
         Y_ENSURE(DataBlocksBitmap.Test(idx));
         DataBlocksBitmap.Unset(idx);
 
         // FIXME No block on disk modification here
     }
 
-    TVolume::TDataBlock TVolume::TBlockGroup::ReadDataBlock(ui32 id) {
-        // TODO Block Cache
-        auto buf = NewBuffer();
-        File_.ReadBlock(buf, CalcDataBlockIndex(id));
-        TDataBlock block{.Buf = std::move(buf)};
-        block.Id = id;
-        return block;
+    TCachedBlockFile::TPage<false> TVolume::TBlockGroup::GetDataBlock(ui32 id) {
+        return File_.GetBlock(CalcDataBlockIndex(id));
+    }
+    TCachedBlockFile::TPage<true> TVolume::TBlockGroup::GetMutableDataBlock(ui32 id) {
+        return File_.GetMutableBlock(CalcDataBlockIndex(id));
     }
 
-    void TVolume::TBlockGroup::WriteDataBlock(const TDataBlock& block) {
-        // TODO Block Cache
-        File_.WriteBlock(block.Buf, CalcDataBlockIndex(block.Id));
-    }
+    //void TVolume::TBlockGroup::WriteDataBlock(const TDataBlock& block) {
+    //    Y_FAIL("");
+    //    // TODO Block Cache
+    //    //File_.WriteBlock(block.Buf, CalcDataBlockIndex(block.Id));
+    //}
 
 
     /*
@@ -165,8 +161,8 @@ namespace NJK {
 
         if (parent.Dir.HasChildren) {
             Y_ENSURE(parent.Dir.BlockCount != 0);
-            auto data = Group_.ReadDataBlock(parent.Dir.FirstBlockId);
-            auto children = DeserializeDirectoryEntries(data.Buf);
+            auto block = Group_.GetMutableDataBlock(parent.Dir.FirstBlockId);
+            auto children = DeserializeDirectoryEntries(block.Buf());
 
             if (std::any_of(children.begin(), children.end(), [&](const TDirEntry& c) { return c.Name == name; })) {
                 throw std::runtime_error("Already has child");
@@ -175,18 +171,17 @@ namespace NJK {
             auto child = Group_.AllocateInode();
             children.push_back({child.Id, name});
 
-            SerializeDirectoryEntries(data.Buf, children);
-            Group_.WriteDataBlock(data);
+            SerializeDirectoryEntries(block.Buf(), children);
             return child;
         } else {
             auto child = Group_.AllocateInode();
-            auto data = Group_.AllocateDataBlock();
-            SerializeDirectoryEntries(data.Buf, {{child.Id, name}});
-            Group_.WriteDataBlock(data);
+            auto blockId = Group_.AllocateDataBlock();
+            auto block = Group_.GetMutableDataBlock(blockId);
+            SerializeDirectoryEntries(block.Buf(), {{child.Id, name}});
 
             parent.Dir.HasChildren = true;
             parent.Dir.BlockCount = 1;
-            parent.Dir.FirstBlockId = data.Id;
+            parent.Dir.FirstBlockId = blockId;
             Group_.WriteInode(parent);
             return child;
         }
@@ -196,27 +191,35 @@ namespace NJK {
         Y_ENSURE(parent.Dir.HasChildren);
         Y_ENSURE(parent.Dir.BlockCount != 0);
 
-        auto data = Group_.ReadDataBlock(parent.Dir.FirstBlockId);
-        auto children = DeserializeDirectoryEntries(data.Buf);
+        auto block = Group_.GetMutableDataBlock(parent.Dir.FirstBlockId);
+        auto children = DeserializeDirectoryEntries(block.Buf());
 
         // TODO Optimize
         auto it = std::find_if(children.begin(), children.end(), [&](const TDirEntry& c) { return c.Name == name; });
         if (it == children.end()) {
             throw std::runtime_error("Has no such child");
         }
-        auto child = *it;
+        auto childDentry = *it;
+        auto child = Group_.ReadInode(childDentry.Id);
+
+        // XXX
+        Y_ENSURE(!child.Dir.HasChildren);
+
+        if (child.Val.Type != TInode::EType::Undefined) {
+            Y_FAIL("TODO Remove value data blocks");
+        }
+
         children.erase(it); // TODO Optimize
-        Group_.DeallocateInode(Group_.ReadInode(child.Id)); // FIXME
+        Group_.DeallocateInode(child); // FIXME
 
         if (children.empty()) {
+            Group_.DeallocateDataBlock(parent.Dir.FirstBlockId);
             parent.Dir.HasChildren = false;
             parent.Dir.BlockCount = 0;
             parent.Dir.FirstBlockId = 0;
             Group_.WriteInode(parent);
-            Group_.DeallocateDataBlock(data);
         } else {
-            SerializeDirectoryEntries(data.Buf, children);
-            Group_.WriteDataBlock(data);
+            SerializeDirectoryEntries(block.Buf(), children);
         }
     }
 
@@ -227,9 +230,8 @@ namespace NJK {
 
         Y_ENSURE(parent.Dir.BlockCount != 0);
 
-        auto data = Group_.ReadDataBlock(parent.Dir.FirstBlockId);
-
-        return DeserializeDirectoryEntries(data.Buf);
+        auto block = Group_.GetDataBlock(parent.Dir.FirstBlockId);
+        return DeserializeDirectoryEntries(block.Buf());
     }
 
     std::optional<TVolume::TInode> TVolume::TInodeDataOps::LookupChild(TInode& parent, const std::string& name) {
@@ -238,8 +240,8 @@ namespace NJK {
         }
         Y_ENSURE(parent.Dir.BlockCount != 0);
 
-        auto data = Group_.ReadDataBlock(parent.Dir.FirstBlockId);
-        auto children = DeserializeDirectoryEntries(data.Buf); // TODO We can lookup without full deserialization
+        auto block = Group_.GetDataBlock(parent.Dir.FirstBlockId);
+        auto children = DeserializeDirectoryEntries(block.Buf()); // TODO We can lookup without full deserialization
 
         // TODO Optimize
         auto it = std::find_if(children.begin(), children.end(), [&](const TDirEntry& c) { return c.Name == name; });
@@ -266,20 +268,22 @@ namespace NJK {
             return;
         }
 
-        auto data = inode.Val.BlockCount
-            ?  Group_.ReadDataBlock(inode.Val.FirstBlockId)
+        const auto blockId = inode.Val.BlockCount
+            ?  inode.Val.FirstBlockId
             :  Group_.AllocateDataBlock();
+
+        auto block = Group_.GetMutableDataBlock(blockId);
 
         const auto type = static_cast<TInode::EType>(value.index());
         inode.Val.Type = type;
 
         if (!inode.Val.BlockCount) {
             inode.Val.BlockCount = 1;
-            inode.Val.FirstBlockId = data.Id;
+            inode.Val.FirstBlockId = blockId;
         }
         Group_.WriteInode(inode); // TODO Until we have cache
 
-        TBufOutput out(data.Buf);
+        TBufOutput out(block.Buf());
         if (const auto* v = std::get_if<ui32>(&value)) {
             Serialize(out, *v);
         } else if (const auto* v = std::get_if<float>(&value)) {
@@ -291,7 +295,6 @@ namespace NJK {
         } else {
             Y_FAIL("todo");
         }
-        Group_.WriteDataBlock(data);
     }
 
     TVolume::TInodeDataOps::TValue TVolume::TInodeDataOps::GetValue(const TInode& inode) {
@@ -301,12 +304,12 @@ namespace NJK {
         }
         Y_ENSURE(inode.Val.BlockCount);
 
-        auto data = Group_.ReadDataBlock(inode.Val.FirstBlockId);
+        auto block = Group_.GetDataBlock(inode.Val.FirstBlockId);
 
         using EType = TInode::EType;
 
         TValue ret;
-        TBufInput in(data.Buf);
+        TBufInput in(block.Buf());
         switch (inode.Val.Type) {
         case EType::Ui32: {
             ui32 val = 0;
@@ -344,9 +347,7 @@ namespace NJK {
         }
         Y_ENSURE(inode.Val.BlockCount);
 
-        // TODO Why to read for deallocate?
-        auto data = Group_.ReadDataBlock(inode.Val.FirstBlockId);
-        Group_.DeallocateDataBlock(data);
+        Group_.DeallocateDataBlock(inode.Val.FirstBlockId);
 
         inode.Val.Type = TInode::EType::Undefined;
         inode.Val.BlockCount = 0;

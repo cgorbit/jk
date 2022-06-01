@@ -18,6 +18,8 @@
 #include <variant>
 #include <optional>
 
+#include <mutex>
+
 namespace NJK {
 
     // Limits: up to several terrabytes (10 for example)
@@ -27,13 +29,14 @@ namespace NJK {
     // Limits: up to several millions keys (10 million keys for example)
     //   => 10M inodes => 20 files only (1 file -- ~500k inodes)
 
-    inline void ReadBlock(TDirectIoFile& file, TFixedBuffer& buf, off_t offset) {
-        Y_ENSURE(file.Read(buf.Data(), buf.Size(), offset) == buf.Size());
-    }
+    //inline void XReadBlock(TDirectIoFile& file, TFixedBuffer& buf, off_t offset) {
+    //    Y_ENSURE(file.Read(buf.MutableData(), buf.Size(), offset) == buf.Size());
+    //    buf.ResetDirtiness();
+    //}
 
-    inline void WriteBlock(TDirectIoFile& file, const TFixedBuffer& buf, off_t offset) {
-        Y_ENSURE(file.Write(buf.Data(), buf.Size(), offset) == buf.Size());
-    }
+    //inline void XWriteBlock(TDirectIoFile& file, const TFixedBuffer& buf, off_t offset) {
+    //    Y_ENSURE(file.Write(buf.Data(), buf.Size(), offset) == buf.Size());
+    //}
 
     class TVolume {
     public:
@@ -128,7 +131,7 @@ namespace NJK {
         // TODO Choose Block Size other than 4 KiB
         class TBlockGroup {
         public:
-            TBlockGroup(size_t inFileOffset, ui32 inodeOffset, TDirectIoFile& file, const TSuperBlock& sb);
+            TBlockGroup(size_t inFileOffset, ui32 inodeOffset, TCachedBlockFile& file, const TSuperBlock& sb);
             ~TBlockGroup();
 
             TInode AllocateInode();
@@ -137,11 +140,12 @@ namespace NJK {
             TInode ReadInode(ui32 id);
             void WriteInode(const TInode& inode);
 
-            TDataBlock AllocateDataBlock();
-            void DeallocateDataBlock(const TDataBlock&);
+            ui32 AllocateDataBlock();
+            void DeallocateDataBlock(ui32);
 
-            TDataBlock ReadDataBlock(ui32 id);
-            void WriteDataBlock(const TDataBlock&);
+            TCachedBlockFile::TPage<false> GetDataBlock(ui32 id);
+            TCachedBlockFile::TPage<true> GetMutableDataBlock(ui32 id);
+            //void WriteDataBlock(const TDataBlock&);
 
         private:
             TFixedBuffer NewBuffer() {
@@ -157,19 +161,22 @@ namespace NJK {
 
             ui32 CalcDataBlockIndex(ui32 blockId) const {
                 const ui32 inodeBlocks = SuperBlock->BlockGroupInodeCount * TInode::OnDiskSize / SuperBlock->BlockSize;
-                return 2 + inodeBlocks + (blockId - DataBlockIndexOffset);
+                const ui32 ret = 2 + inodeBlocks + (blockId - DataBlockIndexOffset);
+                //std::cerr << "+++ CalcDataBlockIndex for " << blockId << ", indeBlocks = " << inodeBlocks
+                    //<< ", result = " << ret << "\n";
+                return ret;
             }
 
             void Flush() {
-                File_.WriteBlock(InodesBitmap.Buf(), InodesBitmapBlockIndex);
-                File_.WriteBlock(DataBlocksBitmap.Buf(), DataBlocksBitmapBlockIndex);
+                InodesBitmap.Buf().CopyTo(File_.GetMutableBlock(InodesBitmapBlockIndex).Buf());
+                DataBlocksBitmap.Buf().CopyTo(File_.GetMutableBlock(DataBlocksBitmapBlockIndex).Buf());
             }
 
             static constexpr size_t InodesBitmapBlockIndex = 0;
             static constexpr size_t DataBlocksBitmapBlockIndex = 1;
 
             const TSuperBlock* SuperBlock{};
-            TBlockDirectIoFileView File_;
+            TCachedBlockFileRegion File_;
 
             // in-memory only
             //ui32 InFileOffset = 0;
@@ -254,13 +261,14 @@ namespace NJK {
                 : SuperBlock(&sb)
                 , Index(idx)
                 , FileName(file)
-                , File(FileName)
+                , RawFile(FileName, SuperBlock->BlockSize)
+                , File(RawFile)
             {
                 BlockGroupDescrs.resize(SuperBlock->MaxBlockGroupCount); // FIXME Better
                 BlockGroups.resize(SuperBlock->MaxBlockGroupCount); // FIXME Better
 
-                if (File.GetSize() == 0) {
-                    File.Truncate(CalcExpectedFileSize());
+                if (RawFile.GetSizeInBlocks() == 0) {
+                    RawFile.TruncateInBlocks(CalcExpectedFileSize() / SuperBlock->BlockSize); // TODO Better
                     SaveBlockGroupDescriptors();
                 }
                 LoadBlockGroupDescriptors();
@@ -295,7 +303,7 @@ namespace NJK {
                 //const size_t offset = CalcExpectedFileSize();
 
                 ++AliveBlockGroupCount;
-                File.Truncate(CalcExpectedFileSize());
+                RawFile.TruncateInBlocks(CalcExpectedFileSize() / SuperBlock->BlockSize); // TODO Better
 
                 // FIXME Better offset
                 BlockGroups[blockGroupIdx] = CreateBlockGroup(blockGroupIdx);
@@ -303,7 +311,7 @@ namespace NJK {
 
             std::unique_ptr<TBlockGroup> CreateBlockGroup(ui32 blockGroupIdx) {
                 return std::make_unique<TBlockGroup>(
-                    CalcBlockGroupOffset(blockGroupIdx),
+                    CalcBlockGroupOffset(blockGroupIdx) / SuperBlock->BlockSize,
                     blockGroupIdx * SuperBlock->BlockGroupInodeCount, // TODO Add MetaGroup Inode offset
                     File,
                     *SuperBlock
@@ -312,8 +320,8 @@ namespace NJK {
 
             void LoadBlockGroupDescriptors() {
                 // TODO Not only one block (for general case)
-                auto buf = ReadBlock(0);
-                TBufInput in(buf);
+                auto block = File.GetBlock(0);
+                TBufInput in(block.Buf());
                 DeserializeFixedVector(in, BlockGroupDescrs);
                 for (const auto& bg : BlockGroupDescrs) {
                     if (bg.D.CreationTime) {
@@ -338,17 +346,16 @@ namespace NJK {
 
             void VerifyFile() {
                 auto expectedSize = CalcExpectedFileSize();
-                std::cerr << "+ file size: " << FileName << ": " << File.GetSize() << '\n';
+                std::cerr << "+ file size: " << FileName << ": " << RawFile.GetSizeInBytes() << '\n';
                 std::cerr << "+ expected size: " << expectedSize << '\n';
-                Y_ENSURE(File.GetSize() == SuperBlock->ZeroBlockGroupOffset + AliveBlockGroupCount * SuperBlock->BlockGroupSize);
+                Y_ENSURE(RawFile.GetSizeInBytes() == SuperBlock->ZeroBlockGroupOffset + AliveBlockGroupCount * SuperBlock->BlockGroupSize);
             }
 
             void SaveBlockGroupDescriptors() {
                 // TODO Not only one block (for general case)
-                auto buf = SuperBlock->NewBuffer();
-                TBufOutput out(buf);
+                auto block = File.GetMutableBlock(0);
+                TBufOutput out(block.Buf());
                 SerializeFixedVector(out, BlockGroupDescrs);
-                WriteBlock(buf, 0);
             }
 
             void Flush() {
@@ -356,17 +363,17 @@ namespace NJK {
             }
 
             // FIXME Separate wrapper for index/offset/blocked operations
-            TFixedBuffer ReadBlock(size_t idx) {
-                auto buf = SuperBlock->NewBuffer();
-                size_t offset = SuperBlock->BlockSize * idx;
-                ::NJK::ReadBlock(File, buf, offset);
-                return buf;
-            }
+            //TFixedBuffer XReadBlock(size_t idx) {
+            //    auto buf = SuperBlock->NewBuffer();
+            //    size_t offset = SuperBlock->BlockSize * idx;
+            //    ::NJK::ReadBlock(RawFile, buf, offset);
+            //    return buf;
+            //}
 
-            void WriteBlock(const TFixedBuffer& buf, size_t idx) {
-                size_t offset = SuperBlock->BlockSize * idx;
-                ::NJK::WriteBlock(File, buf, offset);
-            }
+            //void XWriteBlock(const TFixedBuffer& buf, size_t idx) {
+            //    size_t offset = SuperBlock->BlockSize * idx;
+            //    ::NJK::WriteBlock(RawFile, buf, offset);
+            //}
 
             //TFixedBuffer ReadInodeBitMapBlock() {
             //    return ReadBlock(0);
@@ -382,7 +389,8 @@ namespace NJK {
             const TSuperBlock* SuperBlock{};
             ui32 Index = 0;
             std::string FileName;
-            TDirectIoFile File;
+            TBlockDirectIoFile RawFile;
+            TCachedBlockFile File;
 
             // in-memory only
             ui32 AliveBlockGroupCount = 0;
@@ -419,8 +427,8 @@ namespace NJK {
             const auto& sbPath = MakeSuperBlockFilePath();
             if (std::filesystem::exists(sbPath)) {
                 auto buf = TFixedBuffer::Aligned(settings.BlockSize); // FIXME
-                TDirectIoFile f(sbPath);
-                ReadBlock(f, buf, 0);
+                TBlockDirectIoFile f(sbPath, settings.BlockSize);
+                f.ReadBlock(buf, 0);
                 TBufInput in(buf);
                 SuperBlock_.Deserialize(in);
             } else {
@@ -429,8 +437,8 @@ namespace NJK {
                 auto buf = SuperBlock_.NewBuffer();
                 TBufOutput out(buf);
                 SuperBlock_.Serialize(out);
-                TDirectIoFile f(sbPath);
-                WriteBlock(f, buf, 0);
+                TBlockDirectIoFile f(sbPath, SuperBlock_.BlockSize);
+                f.WriteBlock(buf, 0);
             }
         }
 

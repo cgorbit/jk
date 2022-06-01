@@ -1,8 +1,11 @@
 #pragma once
 
+#include "common.h"
+
 #include <cstddef>
 #include <memory>
 #include <cstring>
+#include <iostream>
 
 namespace NJK {
 
@@ -32,6 +35,7 @@ namespace NJK {
         TFixedBuffer(const TFixedBuffer&) = delete;
 
         TFixedBuffer(TFixedBuffer&& other) {
+            //std::cerr << "MOVE CTOR\n";
             Swap(other);
         }
 
@@ -45,23 +49,40 @@ namespace NJK {
         TFixedBuffer& operator= (const TFixedBuffer&) = delete;
 
         TFixedBuffer& operator= (TFixedBuffer&& other) {
+            //std::cerr << "MOVE ASSIGN\n";
             TFixedBuffer tmp(std::move(other));
             Swap(tmp);
             return *this;
         }
 
+        // FIXME Dirty or not???
         void FillZeroes() {
-            std::memset(Data(), 0, Size());
+            //std::cerr << "FILL ZEROES\n";
+            std::memset(MutableData(), 0, Size());
         }
 
         size_t Size() const {
             return Size_;
         }
 
-        char* Data() {
+        char* MutableData() {
             //return Data_.get();
+            //Dirty_ = true;
             return (char*)Data_;
         }
+
+        void CopyTo(TFixedBuffer& dst) const {
+            Y_ENSURE(Size_ == dst.Size_);
+            std::memcpy(dst.MutableData(), Data(), Size());
+        }
+
+        //void ResetDirtiness() {
+            //Dirty_ = false;
+        //}
+
+        //bool Dirty() const {
+            //return Dirty_;
+        //}
 
         const char* Data() const {
             //return Data_.get();
@@ -81,6 +102,7 @@ namespace NJK {
         //std::unique_ptr<char[]> Data_;
         void* Data_{};
         size_t Size_{};
+        //bool Dirty_ = false;
     };
 
 }
