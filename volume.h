@@ -17,6 +17,7 @@
 #include <memory>
 #include <variant>
 #include <optional>
+#include <sstream>
 
 #include <mutex>
 
@@ -38,15 +39,17 @@ namespace NJK {
     //    Y_ENSURE(file.Write(buf.Data(), buf.Size(), offset) == buf.Size());
     //}
 
+    struct TVolumeSettings {
+        ui32 BlockSize = 4096;
+        ui32 NameMaxLen = 32; // or 64 TODO Not used
+        ui32 MaxFileSize = 2_GiB;
+        //static constexpr ui32 GroupDescrSize = 64; // TODO
+        //ui32 MetaGroupGroupCount = 4096 / GroupDescrSize;
+    };
+
     class TVolume {
     public:
-        struct TSettings {
-            ui32 BlockSize = 4096;
-            ui32 NameMaxLen = 32; // or 64
-            ui32 MaxFileSize = 2_GiB;
-            //static constexpr ui32 GroupDescrSize = 64; // TODO
-            //ui32 MetaGroupGroupCount = 4096 / GroupDescrSize;
-        };
+        using TSettings = TVolumeSettings;
 
         struct TSuperBlock {
             ui32 BlockSize = 0;
@@ -224,6 +227,15 @@ namespace NJK {
             TValue GetValue(const TInode& inode);
             void UnsetValue(TInode& inode);
 
+            std::string DumpTree(bool dumpInodeId = false) {
+                std::stringstream out;
+                DumpTree(out, dumpInodeId);
+                return out.str();
+            }
+
+            void DumpTree(std::ostream& out, bool dumpInodeId = false);
+            void DoDumpTree(std::ostream& out, const TInode& root, size_t offset, bool dumpInodeId);
+
         private:
             // TODO Write Deserialization of:
             // 1. std::string
@@ -348,9 +360,9 @@ namespace NJK {
             }
 
             void VerifyFile() {
-                auto expectedSize = CalcExpectedFileSize();
-                std::cerr << "+ file size: " << FileName << ": " << RawFile.GetSizeInBytes() << '\n';
-                std::cerr << "+ expected size: " << expectedSize << '\n';
+                //auto expectedSize = CalcExpectedFileSize();
+                //std::cerr << "+ file size: " << FileName << ": " << RawFile.GetSizeInBytes() << '\n';
+                //std::cerr << "+ expected size: " << expectedSize << '\n';
                 Y_ENSURE(RawFile.GetSizeInBytes() == SuperBlock->ZeroBlockGroupOffset + AliveBlockGroupCount * SuperBlock->BlockGroupSize);
             }
 
@@ -406,7 +418,7 @@ namespace NJK {
             std::vector<std::unique_ptr<TBlockGroup>> BlockGroups;
         };
 
-        explicit TVolume(const std::string& dir, const TSettings& settings, bool ensureRoot = true)
+        explicit TVolume(const std::string& dir, const TSettings& settings = {}, bool ensureRoot = true)
             : Directory_(dir)
         {
             InitSuperBlock(settings);

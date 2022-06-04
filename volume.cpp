@@ -292,6 +292,8 @@ namespace NJK {
             Serialize(out, *v);
         } else if (const auto* v = std::get_if<float>(&value)) {
             Serialize(out, *v);
+        } else if (const auto* v = std::get_if<double>(&value)) {
+            Serialize(out, *v);
         } else if (const auto* v = std::get_if<std::string>(&value)) {
             ui16 len = v->size();
             Serialize(out, len);
@@ -323,6 +325,12 @@ namespace NJK {
             break;
         case EType::Float: {
             float val = 0;
+            Deserialize(in, val);
+            ret = val;
+        }
+            break;
+        case EType::Double: {
+            double val = 0;
             Deserialize(in, val);
             ret = val;
         }
@@ -388,6 +396,56 @@ namespace NJK {
             ui8 len = entry.Name.size();
             Serialize(out, len);
             out.Save(entry.Name.data(), len);
+        }
+    }
+
+    void TVolume::TInodeDataOps::DumpTree(std::ostream& out, bool dumpInodeId) {
+        const auto& root = Group_.ReadInode(0); // TODO
+        DoDumpTree(out, root, 0, dumpInodeId);
+    }
+
+    void TVolume::TInodeDataOps::DoDumpTree(std::ostream& out, const TInode& root, size_t offset, bool dumpInodeId) {
+        auto children = ListChildren(root);
+        std::sort(children.begin(), children.end(), [] (const auto& lhs, const auto& rhs) {
+            return lhs.Name < rhs.Name;
+        });
+        for (auto&& childEntry : children) {
+            for (size_t i = 0; i < offset; ++i) {
+                out.put(' ');
+                out.put(' ');
+                out.put(' ');
+                out.put(' ');
+            }
+            const auto& child = Group_.ReadInode(childEntry.Id);
+            const auto& value = GetValue(child);
+            out << childEntry.Name;
+            if (dumpInodeId) {
+                out << ' ' << child.Id;
+            }
+            if (value.index()) {
+                out << " = ";
+                if (auto* p = std::get_if<bool>(&value)) {
+                    out << "bool " << *p;
+                } else if (auto* p = std::get_if<i32>(&value)) {
+                    out << "i32 " << *p;
+                } else if (auto* p = std::get_if<ui32>(&value)) {
+                    out << "ui32 " << *p;
+                } else if (auto* p = std::get_if<int64_t>(&value)) {
+                    out << "i64 " << *p;
+                } else if (auto* p = std::get_if<uint64_t>(&value)) {
+                    out << "ui64 " << *p;
+                } else if (auto* p = std::get_if<float>(&value)) {
+                    out << "float " << *p;
+                } else if (auto* p = std::get_if<double>(&value)) {
+                    out << "double " << *p;
+                } else if (auto* p = std::get_if<std::string>(&value)) {
+                    out << "string \"" << *p << "\"";
+                } else if (auto* p = std::get_if<TBlobView>(&value)) {
+                    out << "blob \"" << std::string(p->Ptr, p->Size) << "\"";
+                }
+            }
+            out << '\n';
+            DoDumpTree(out, child, offset + 1, dumpInodeId);
         }
     }
 }

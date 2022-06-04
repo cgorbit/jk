@@ -2,6 +2,7 @@
 #include "volume.h"
 #include "storage.h"
 #include "fixed_buffer.h"
+
 #include <cassert>
 #include <iostream>
 #include <sstream>
@@ -247,6 +248,8 @@ void TestInodeDataOps() {
         ops.SetValue(sbin, (ui32)777);
         ops.SetValue(trofimenkov, std::string{"Handsome"});
         ops.SetValue(home, std::string{"Sweet Home"});
+
+//ops.DumpTree(std::cerr);
     }
 
     {
@@ -287,6 +290,7 @@ void TestInodeDataOps() {
         AssertValue(trofimenkov, std::string{"Handsome"}, ops);
 
         ops.SetValue(trofimenkov, (float)1.46);
+//ops.DumpTree(std::cerr);
     }
     {
         TVolume vol(volumePath, {}, false);
@@ -301,6 +305,7 @@ void TestInodeDataOps() {
         AssertValue(trofimenkov, (float)1.46, ops);
 
         ops.UnsetValue(trofimenkov);
+//ops.DumpTree(std::cerr);
     }
 
     {
@@ -318,6 +323,7 @@ void TestInodeDataOps() {
         AssertValue(trofimenkov, std::monostate{}, ops);
 
         ops.SetValue(trofimenkov, (ui32)1987);
+//ops.DumpTree(std::cerr);
     }
 
     {
@@ -329,6 +335,7 @@ void TestInodeDataOps() {
         auto trofimenkov = bg.ReadInode(6);
 
         AssertValue(trofimenkov, (ui32)1987, ops);
+//ops.DumpTree(std::cerr);
     }
 }
 
@@ -342,6 +349,12 @@ void AssertValuesEqual(const NJK::TInodeValue& lhs, const NJK::TInodeValue& rhs)
         assert(std::get<std::string>(lhs) == std::get<std::string>(rhs));
     } else if (std::holds_alternative<ui32>(lhs)) {
         assert(std::get<ui32>(lhs) == std::get<ui32>(rhs));
+    } else if (std::holds_alternative<float>(lhs)) {
+        assert(std::get<float>(lhs) == std::get<float>(rhs));
+    } else if (std::holds_alternative<double>(lhs)) {
+        assert(std::get<double>(lhs) == std::get<double>(rhs));
+    } else if (std::holds_alternative<std::monostate>(lhs)) {
+        // nothing
     } else {
         Y_FAIL("todo");
     }
@@ -356,7 +369,21 @@ static_assert(sizeof(std::condition_variable) == 48, ""); // FIXME Why?
 //static_assert(sizeof(std::unique_ptr<size_t>) == 8, "");
 //static_assert(sizeof(std::shared_ptr<size_t>) == 16, "");
 
-void TestStorage() {
+// must be sorted in ascii order
+void AssertTreeEqual(NJK::TVolume& vol, std::string_view expect) {
+    using namespace NJK;
+    TVolume::TInodeDataOps ops(&vol);
+    while (expect.size() && expect[0] == '\n') {
+        expect = std::string_view(&*(expect.begin() + 1), expect.size() - 1);
+    }
+    const auto& got = ops.DumpTree();
+    if (got != expect) {
+        std::cerr << "Trees are not equal, expect: <[\n" << expect << "]>, but got: <[\n" << got << "]>\n";
+        abort();
+    }
+}
+
+void TestStorage0() {
     using namespace NJK;
     using TValue = TInodeValue;
 
@@ -370,19 +397,235 @@ void TestStorage() {
     //};
 
     {
-        //auto rootVolume = MakeVolume(rootVolumePath);
-        //auto homeVolume = MakeVolume(homeVolumePath);
-
         TVolume root(rootVolumePath, {});
         TVolume home(homeVolumePath, {});
-        TStorage storage(&root);
-        storage.Mount("/home", &home);
+        {
+            TStorage storage(&root);
+            storage.Mount("/home", &home);
 
-        storage.Set("/home/trofimenkov/bar/.vimrc", (ui32)10);
-        storage.Set("/home/trofimenkov/bar", std::string{"Hello"});
+            storage.Set("/home/trofimenkov/bar/.vimrc", (ui32)10);
+            storage.Set("//home/trofimenkov/bar", std::string{"Hello"});
+            storage.Set("/root/.bashrc///", std::string{"config"});
+            storage.Set("/README", std::string{"Linux"});
 
-        AssertValuesEqual(storage.Get("/home/trofimenkov/bar/.vimrc"), TValue{(ui32)10});
-        AssertValuesEqual(storage.Get("//home////trofimenkov/bar/"), TValue{std::string{"Hello"}});
+            AssertValuesEqual(storage.Get("/home/trofimenkov/bar/.vimrc"), TValue{(ui32)10});
+            AssertValuesEqual(storage.Get("//home////trofimenkov/bar/"), TValue{std::string{"Hello"}});
+            AssertValuesEqual(storage.Get("//root//.bashrc"), TValue{std::string{"config"}});
+        }
+
+        {
+            AssertTreeEqual(root, R"(
+README = string "Linux"
+home
+root
+    .bashrc = string "config"
+)");
+
+            TVolume::TInodeDataOps ops(&root);
+            auto rootInode = root.GetRoot();
+
+            assert(ops.ListChildren(rootInode).size() == 3);
+
+            auto rootDirInode = ops.LookupChild(rootInode, "root");
+            assert(rootDirInode.has_value());
+
+            auto homeDirInode = ops.LookupChild(rootInode, "home");
+            assert(homeDirInode.has_value());
+
+            //AssertValuesEqual(, TValue{std::string{"config"}});
+        }
+
+        {
+            AssertTreeEqual(home, R"(
+trofimenkov
+    bar = string "Hello"
+        .vimrc = ui32 10
+)");
+            TVolume::TInodeDataOps ops(&home);
+            auto rootInode = home.GetRoot();
+
+            assert(ops.ListChildren(rootInode).size() == 1);
+
+            auto trofimenkovDirInode = ops.LookupChild(rootInode, "trofimenkov");
+            assert(trofimenkovDirInode.has_value());
+
+            //AssertValuesEqual(, TValue{std::string{"config"}});
+        }
+    }
+}
+
+#define VOLUME_PATH(alias) \
+    const std::string alias##VolumePath = "./var/volume_" #alias; \
+    std::filesystem::remove_all(alias##VolumePath);
+
+#define VOLUME(alias) \
+    TVolume alias(alias##VolumePath);
+
+void TestStorage1() {
+    using namespace NJK;
+    using TValue = TInodeValue;
+
+    VOLUME_PATH(root)
+    VOLUME_PATH(homeV0)
+    VOLUME_PATH(homeV1)
+    VOLUME_PATH(homeV2)
+    VOLUME_PATH(lib)
+    VOLUME_PATH(cdrom)
+
+    {
+        VOLUME(root);
+        VOLUME(homeV0);
+        VOLUME(homeV1);
+        VOLUME(homeV2);
+        VOLUME(cdrom);
+        VOLUME(lib);
+
+        {
+            TStorage storage(&homeV0);
+            storage.Set("/lazy", std::string{"old_lazy_attr"}); // will be overriden
+            storage.Set("/lazy/.bashrc", std::string{"lazy-old-bashrc"}); // will be hidden
+        }
+        AssertTreeEqual(homeV0, R"(
+lazy = string "old_lazy_attr"
+    .bashrc = string "lazy-old-bashrc"
+)");
+
+        {
+            TStorage storage(&homeV1);
+            storage.Set("/leva/.vimrc", std::string{"Yandex.News"}); // will not be unavailable
+            storage.Set("/leva", (ui32)40);
+        }
+        AssertTreeEqual(homeV1, R"(
+leva = ui32 40
+    .vimrc = string "Yandex.News"
+)");
+
+        {
+            TStorage storage(&homeV2);
+            storage.Set("/trofimenkov/.vimrc", std::string{"set hls"});
+            storage.Set("/trofimenkov", (ui32)35);
+            storage.Set("/lazy", std::string{"new-lazy-attr"});
+            storage.Set("/lazy/.vimrc", std::string{"lazy-vimrc"});
+        }
+        AssertTreeEqual(homeV2, R"(
+lazy = string "new-lazy-attr"
+    .vimrc = string "lazy-vimrc"
+trofimenkov = ui32 35
+    .vimrc = string "set hls"
+)");
+
+        {
+            TStorage storage(&lib);
+            storage.Set("/ld-linux.so.2", std::string{"attr0"});
+            storage.Set("/distbuild/libdistbuild.so.2", (float)0.5);
+            storage.Set("/distbuild/libdistbuild.so.3", (double)0.25);
+        }
+        AssertTreeEqual(lib, R"(
+distbuild
+    libdistbuild.so.2 = float 0.5
+    libdistbuild.so.3 = double 0.25
+ld-linux.so.2 = string "attr0"
+)");
+
+        {
+            TStorage storage(&root);
+            storage.Mount("/home", &homeV0);
+            storage.Mount("/home", &homeV1);
+            storage.Mount("/home", &homeV2);
+            storage.Mount("/mnt", &cdrom);
+            storage.Mount("/lib", &lib);
+            storage.Mount("/usr/lib", &lib);
+
+            AssertValuesEqual(storage.Get("/home/lazy"), TValue{std::string{"new-lazy-attr"}});
+            AssertValuesEqual(storage.Get("/home/lazy/.bashrc"), TValue{});
+            AssertValuesEqual(storage.Get("/home/lazy/.vimrc"), TValue{std::string{"lazy-vimrc"}});
+
+            AssertValuesEqual(storage.Get("/home/leva"), (ui32)40);
+            AssertValuesEqual(storage.Get("/home/leva/.vimrc"), TValue{});
+
+            AssertValuesEqual(storage.Get("/home/unknown"), {});
+            AssertValuesEqual(storage.Get("/home/unknown/attr"), {});
+            AssertValuesEqual(storage.Get("/home/trofimenkov/NOSUCHPATH/.vimrc"), TValue{});
+
+            AssertValuesEqual(storage.Get("/lib/distbuild/libdistbuild.so.2"), (float)0.5);
+            AssertValuesEqual(storage.Get("/usr/lib/distbuild/libdistbuild.so.2"), (float)0.5);
+
+            AssertValuesEqual(storage.Get("/lib/ld-linux.so.2"), TValue{std::string{"attr0"}});
+            AssertValuesEqual(storage.Get("/usr/lib/ld-linux.so.2"), TValue{std::string{"attr0"}});
+        }
+        
+        // Check that nothing changed
+
+        AssertTreeEqual(homeV0, R"(
+lazy = string "old_lazy_attr"
+    .bashrc = string "lazy-old-bashrc"
+)");
+        AssertTreeEqual(homeV1, R"(
+leva = ui32 40
+    .vimrc = string "Yandex.News"
+)");
+        AssertTreeEqual(homeV2, R"(
+lazy = string "new-lazy-attr"
+    .vimrc = string "lazy-vimrc"
+trofimenkov = ui32 35
+    .vimrc = string "set hls"
+)");
+        AssertTreeEqual(lib, R"(
+distbuild
+    libdistbuild.so.2 = float 0.5
+    libdistbuild.so.3 = double 0.25
+ld-linux.so.2 = string "attr0"
+)");
+
+        {
+            TStorage storage(&root);
+            storage.Mount("/home", &homeV0);
+            storage.Mount("/home", &homeV1);
+            storage.Mount("/home", &homeV2);
+            storage.Mount("/mnt", &cdrom);
+            storage.Mount("/lib", &lib);
+            storage.Mount("/usr/lib", &lib);
+
+            storage.Set("/home/alex-sh/philosophy/fromm", TValue{std::string{"Erich Fromm"}});
+
+            storage.Set("/usr/lib/libfoo.so", (ui32)155);
+            AssertValuesEqual(storage.Get("/lib/libfoo.so"), (ui32)155);
+
+            storage.Set("/home/leva", (ui32)42);
+            storage.Set("/home/lazy/.bashrc", TValue{std::string{"lazy-new-bashrc"}});
+
+            AssertValuesEqual(storage.Get("/home/leva"), (ui32)42);
+            AssertValuesEqual(storage.Get("/home/lazy/.bashrc"), TValue{std::string{"lazy-new-bashrc"}});
+        }
+
+        AssertTreeEqual(homeV0, R"(
+lazy = string "old_lazy_attr"
+    .bashrc = string "lazy-old-bashrc"
+)");
+        AssertTreeEqual(homeV1, R"(
+leva = ui32 42
+    .vimrc = string "Yandex.News"
+)");
+        AssertTreeEqual(homeV2, R"(
+alex-sh
+    philosophy
+        fromm = string "Erich Fromm"
+lazy = string "new-lazy-attr"
+    .bashrc = string "lazy-new-bashrc"
+    .vimrc = string "lazy-vimrc"
+trofimenkov = ui32 35
+    .vimrc = string "set hls"
+)");
+        AssertTreeEqual(lib, R"(
+distbuild
+    libdistbuild.so.2 = float 0.5
+    libdistbuild.so.3 = double 0.25
+ld-linux.so.2 = string "attr0"
+libfoo.so = ui32 155
+)");
+
+        //AssertTreeEqual(root, R"()");
+
     }
 }
 
@@ -400,7 +643,8 @@ int main() {
     TestDataBlockAllocation();
     TestInodeDataOps();
 
-    TestStorage();
+    TestStorage0();
+    TestStorage1();
 
     return 0;
 }

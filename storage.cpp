@@ -29,7 +29,8 @@ namespace NJK {
             Root_.Dentry->InodeData = &inodeData;
         }
 
-        void Set(const std::string& path, const TValue& value) {
+        void Set(const std::string& path, const TValue& value, ui32 deadline) {
+            (void)deadline; // TODO
             auto node = ResolvePath(path, true);
             Y_VERIFY(node.Dentry);
             EnsureInodeData(node);
@@ -184,6 +185,10 @@ namespace NJK {
         }
 
         auto dir = ResolveDirs(dirPath, {.Create = create});
+        if (!dir.Dentry) {
+            Y_ENSURE(!create)
+            return {};
+        }
         if (dir.Dentry->Mounts) {
             //for (const auto& mount : *dir.Dentry->Mounts) { // TODO REVERT ORDER
             const auto& mounts = *dir.Dentry->Mounts;
@@ -362,8 +367,8 @@ namespace NJK {
 
     TStorage::~TStorage() = default;
 
-    void TStorage::Set(const std::string& path, const TValue& value) {
-        Impl_->Set(path, value);
+    void TStorage::Set(const std::string& path, const TValue& value, ui32 deadline) {
+        Impl_->Set(path, value, deadline);
     }
 
     void TStorage::Mount(const std::string& mountPoint, TVolume* src, const std::string& srcDir) {
