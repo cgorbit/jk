@@ -294,12 +294,14 @@ namespace NJK {
             Serialize(out, *v);
         } else if (const auto* v = std::get_if<double>(&value)) {
             Serialize(out, *v);
+        } else if (const auto* v = std::get_if<bool>(&value)) {
+            Serialize(out, *v);
         } else if (const auto* v = std::get_if<std::string>(&value)) {
             ui16 len = v->size();
             Serialize(out, len);
             out.Save(v->data(), len);
         } else {
-            Y_FAIL("todo");
+            Y_FAIL("TODO TInodeDataOps::SetValue");
         }
     }
 
@@ -329,6 +331,12 @@ namespace NJK {
             ret = val;
         }
             break;
+        case EType::Bool: {
+            bool val = false;
+            Deserialize(in, val);
+            ret = val;
+        }
+            break;
         case EType::Double: {
             double val = 0;
             Deserialize(in, val);
@@ -345,7 +353,7 @@ namespace NJK {
         }
             break;
         default:
-            Y_FAIL("TODO");
+            Y_FAIL("TODO TInodeDataOps::GetValue");
         };
 
         return ret;
@@ -425,7 +433,7 @@ namespace NJK {
             if (value.index()) {
                 out << " = ";
                 if (auto* p = std::get_if<bool>(&value)) {
-                    out << "bool " << *p;
+                    out << "bool " << (*p ? "true" : "false");
                 } else if (auto* p = std::get_if<i32>(&value)) {
                     out << "i32 " << *p;
                 } else if (auto* p = std::get_if<ui32>(&value)) {

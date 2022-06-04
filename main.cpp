@@ -353,10 +353,12 @@ void AssertValuesEqual(const NJK::TInodeValue& lhs, const NJK::TInodeValue& rhs)
         assert(std::get<float>(lhs) == std::get<float>(rhs));
     } else if (std::holds_alternative<double>(lhs)) {
         assert(std::get<double>(lhs) == std::get<double>(rhs));
+    } else if (std::holds_alternative<bool>(lhs)) {
+        assert(std::get<bool>(lhs) == std::get<bool>(rhs));
     } else if (std::holds_alternative<std::monostate>(lhs)) {
         // nothing
     } else {
-        Y_FAIL("todo");
+        Y_FAIL("TODO AssertValuesEqual");
     }
 }
 
@@ -481,6 +483,18 @@ void TestStorage1() {
         VOLUME(lib);
 
         {
+            TStorage storage(&root);
+            storage.Set("/home/petrk/age", (ui32)43);
+            storage.Set("/home/petrk", true);
+            storage.Set("/home", (float)1024);
+        }
+        AssertTreeEqual(root, R"(
+home = float 1024
+    petrk = bool true
+        age = ui32 43
+)");
+
+        {
             TStorage storage(&homeV0);
             storage.Set("/lazy", std::string{"old_lazy_attr"}); // will be overriden
             storage.Set("/lazy/.bashrc", std::string{"lazy-old-bashrc"}); // will be hidden
@@ -489,7 +503,6 @@ void TestStorage1() {
 lazy = string "old_lazy_attr"
     .bashrc = string "lazy-old-bashrc"
 )");
-
         {
             TStorage storage(&homeV1);
             storage.Set("/leva/.vimrc", std::string{"Yandex.News"}); // will not be unavailable
@@ -536,6 +549,8 @@ ld-linux.so.2 = string "attr0"
             storage.Mount("/lib", &lib);
             storage.Mount("/usr/lib", &lib);
 
+            AssertValuesEqual(storage.Get("/home"), (float)1024);
+
             AssertValuesEqual(storage.Get("/home/lazy"), TValue{std::string{"new-lazy-attr"}});
             AssertValuesEqual(storage.Get("/home/lazy/.bashrc"), TValue{});
             AssertValuesEqual(storage.Get("/home/lazy/.vimrc"), TValue{std::string{"lazy-vimrc"}});
@@ -547,6 +562,10 @@ ld-linux.so.2 = string "attr0"
             AssertValuesEqual(storage.Get("/home/unknown/attr"), {});
             AssertValuesEqual(storage.Get("/home/trofimenkov/NOSUCHPATH/.vimrc"), TValue{});
 
+            // this hidden by mounts in any case
+            AssertValuesEqual(storage.Get("/home/petrk"), {});
+            AssertValuesEqual(storage.Get("/home/petrk/age"), {});
+
             AssertValuesEqual(storage.Get("/lib/distbuild/libdistbuild.so.2"), (float)0.5);
             AssertValuesEqual(storage.Get("/usr/lib/distbuild/libdistbuild.so.2"), (float)0.5);
 
@@ -556,6 +575,15 @@ ld-linux.so.2 = string "attr0"
         
         // Check that nothing changed
 
+        AssertTreeEqual(root, R"(
+home = float 1024
+    petrk = bool true
+        age = ui32 43
+lib
+mnt
+usr
+    lib
+)");
         AssertTreeEqual(homeV0, R"(
 lazy = string "old_lazy_attr"
     .bashrc = string "lazy-old-bashrc"
@@ -586,18 +614,32 @@ ld-linux.so.2 = string "attr0"
             storage.Mount("/lib", &lib);
             storage.Mount("/usr/lib", &lib);
 
+            storage.Set("/home/alex-sh", (ui32)12);
             storage.Set("/home/alex-sh/philosophy/fromm", TValue{std::string{"Erich Fromm"}});
 
             storage.Set("/usr/lib/libfoo.so", (ui32)155);
             AssertValuesEqual(storage.Get("/lib/libfoo.so"), (ui32)155);
 
-            storage.Set("/home/leva", (ui32)42);
+            storage.Set("/home/leva", (ui32)42); // XXX Will update old homeV1
             storage.Set("/home/lazy/.bashrc", TValue{std::string{"lazy-new-bashrc"}});
 
             AssertValuesEqual(storage.Get("/home/leva"), (ui32)42);
             AssertValuesEqual(storage.Get("/home/lazy/.bashrc"), TValue{std::string{"lazy-new-bashrc"}});
+
+            storage.Set("/etc/hosts", TValue{std::string{"127.0.0.1 localhost"}});
         }
 
+        AssertTreeEqual(root, R"(
+etc
+    hosts = string "127.0.0.1 localhost"
+home = float 1024
+    petrk = bool true
+        age = ui32 43
+lib
+mnt
+usr
+    lib
+)");
         AssertTreeEqual(homeV0, R"(
 lazy = string "old_lazy_attr"
     .bashrc = string "lazy-old-bashrc"
@@ -607,7 +649,7 @@ leva = ui32 42
     .vimrc = string "Yandex.News"
 )");
         AssertTreeEqual(homeV2, R"(
-alex-sh
+alex-sh = ui32 12
     philosophy
         fromm = string "Erich Fromm"
 lazy = string "new-lazy-attr"
@@ -624,7 +666,70 @@ ld-linux.so.2 = string "attr0"
 libfoo.so = ui32 155
 )");
 
-        //AssertTreeEqual(root, R"()");
+    }
+}
+
+void TestStorageNonRoot() {
+    using namespace NJK;
+    //using TValue = TInodeValue;
+
+    VOLUME_PATH(rootOld)
+    VOLUME_PATH(rootNew)
+    VOLUME_PATH(home)
+
+    {
+        VOLUME(rootOld);
+        VOLUME(rootNew);
+        VOLUME(home);
+
+        {
+            TStorage storage(&rootOld);
+            storage.Set("/home", std::string{"old-root-home"});
+            storage.Set("/home/trofimenkov", std::string{"dev"});
+            storage.Set("/home/trofimenkov/attr", false);
+            storage.Set("/etc/issue", std::string{"Debian"});
+            storage.Set("/bin/ls", true);
+            storage.Set("/bin/du", (ui32)111);
+            storage.Set("/bin", std::string{"old-root-bin"});
+        }
+        AssertTreeEqual(rootOld, R"(
+bin = string "old-root-bin"
+    du = ui32 111
+    ls = bool true
+etc
+    issue = string "Debian"
+home = string "old-root-home"
+    trofimenkov = string "dev"
+        attr = bool false
+)");
+
+        {
+            TStorage storage(&rootNew);
+            storage.Set("/home", std::string{"new-root-home"});
+        }
+        AssertTreeEqual(rootNew, R"(
+home = string "new-root-home"
+)");
+
+        {
+            TStorage storage(&rootNew);
+            storage.Mount("/home", &home);
+            storage.Mount("/etc", &rootOld, "/etc");
+            storage.Mount("/etc", &rootOld, "/etc");
+            storage.Mount("/bin", &rootOld, "/bin");
+
+            AssertValuesEqual(storage.Get("/home/trofimenkov"), {});
+            AssertValuesEqual(storage.Get("/home/trofimenkov/attr"), {});
+
+            AssertValuesEqual(storage.Get("/etc"), {});
+            AssertValuesEqual(storage.Get("/home"), std::string{"new-root-home"});
+            AssertValuesEqual(storage.Get("/bin"), {});
+
+            AssertValuesEqual(storage.Get("/bin/du"), (ui32)111);
+            AssertValuesEqual(storage.Get("/bin/ls"), true);
+            AssertValuesEqual(storage.Get("/etc/issue"), std::string{"Debian"});
+        }
+        
 
     }
 }
@@ -645,6 +750,7 @@ int main() {
 
     TestStorage0();
     TestStorage1();
+    TestStorageNonRoot();
 
     return 0;
 }
