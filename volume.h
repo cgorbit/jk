@@ -71,8 +71,10 @@ namespace NJK {
         };
 
         struct TInode {
+            using TId = ui32;
+
             // in-memory
-            ui32 Id = 0;
+            TId Id = 0;
 
             enum class EType: ui8 {
                 Undefined,
@@ -209,13 +211,14 @@ namespace NJK {
                 }
             };
 
+            TInodeDataOps(TVolume* group);
             TInodeDataOps(TBlockGroup& group);
 
             TInode AddChild(TInode& parent, const std::string& name);
             void RemoveChild(TInode& parent, const std::string& name);
-            std::optional<TInode> LookupChild(TInode& parent, const std::string& name);
+            std::optional<TInode> LookupChild(const TInode& parent, const std::string& name);
             TInode EnsureChild(TInode& parent, const std::string& name);
-            std::vector<TDirEntry> ListChildren(TInode& parent);
+            std::vector<TDirEntry> ListChildren(const TInode& parent);
 
             void SetValue(TInode& inode, const TValue& value, const ui32 deadline = 0);
             TValue GetValue(const TInode& inode);
@@ -403,7 +406,7 @@ namespace NJK {
             std::vector<std::unique_ptr<TBlockGroup>> BlockGroups;
         };
 
-        TVolume(const std::string& dir, const TSettings& settings, bool ensureRoot = false)
+        explicit TVolume(const std::string& dir, const TSettings& settings, bool ensureRoot = true)
             : Directory_(dir)
         {
             InitSuperBlock(settings);
@@ -420,7 +423,11 @@ namespace NJK {
         }
 
         TInode GetRoot() {
-            return MetaGroups_[0]->BlockGroups[0]->ReadInode(0);
+            return ReadInode(0);
+        }
+
+        TInode ReadInode(ui32 id) {
+            return MetaGroups_[0]->BlockGroups[0]->ReadInode(id);
         }
 
         void InitSuperBlock(const TSettings& settings) {
@@ -506,5 +513,7 @@ namespace NJK {
         TSuperBlock SuperBlock_;
         std::vector<std::unique_ptr<TMetaGroup>> MetaGroups_;
     };
+
+    using TVolumePtr = std::unique_ptr<TVolume>;
 
 }

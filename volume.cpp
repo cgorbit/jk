@@ -151,6 +151,10 @@ namespace NJK {
         TInodeDataOps
     */
 
+    TVolume::TInodeDataOps::TInodeDataOps(TVolume* volume)
+        : Group_(*volume->MetaGroups_[0]->BlockGroups[0])
+    {
+    }
     TVolume::TInodeDataOps::TInodeDataOps(TBlockGroup& group)
         : Group_(group)
     {
@@ -223,7 +227,7 @@ namespace NJK {
         }
     }
 
-    std::vector<TVolume::TInodeDataOps::TDirEntry> TVolume::TInodeDataOps::ListChildren(TInode& parent) {
+    std::vector<TVolume::TInodeDataOps::TDirEntry> TVolume::TInodeDataOps::ListChildren(const TInode& parent) {
         if (!parent.Dir.HasChildren) {
             return {};
         }
@@ -234,7 +238,7 @@ namespace NJK {
         return DeserializeDirectoryEntries(block.Buf());
     }
 
-    std::optional<TVolume::TInode> TVolume::TInodeDataOps::LookupChild(TInode& parent, const std::string& name) {
+    std::optional<TVolume::TInode> TVolume::TInodeDataOps::LookupChild(const TInode& parent, const std::string& name) {
         if (!parent.Dir.HasChildren) {
             return {};
         }

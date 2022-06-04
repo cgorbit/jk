@@ -34,4 +34,7 @@ namespace NJK {
 
     #define Y_FAIL(msg) throw std::runtime_error(msg)
 
+    #define Y_ASSERT(cond) assert(cond)
+
+    #define Y_VERIFY(cond) if (!(cond)) { std::cerr << #cond << '\n'; std::abort(); }
 }

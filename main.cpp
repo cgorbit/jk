@@ -5,6 +5,8 @@
 #include <cassert>
 #include <iostream>
 #include <sstream>
+#include <shared_mutex>
+#include <condition_variable>
 
 void TestDefaultSuperBlockCalc() {
     using namespace NJK;
@@ -73,7 +75,7 @@ void TestInodeAllocation() {
     const std::string volumePath = "./var/volume_inodes";
     std::filesystem::remove_all(volumePath);
     {
-        TVolume vol(volumePath, {});
+        TVolume vol(volumePath, {}, false);
 
         auto& meta = *vol.MetaGroups_[0];
         if (meta.AliveBlockGroupCount == 0) {
@@ -94,7 +96,7 @@ void TestInodeAllocation() {
     }
 
     {
-        TVolume vol(volumePath, {});
+        TVolume vol(volumePath, {}, false);
 
         auto& meta = *vol.MetaGroups_[0];
         assert(meta.AliveBlockGroupCount = 1);
@@ -122,7 +124,7 @@ void TestInodeAllocation() {
     }
 
     {
-        TVolume vol(volumePath, {});
+        TVolume vol(volumePath, {}, false);
 
         auto& meta = *vol.MetaGroups_[0];
         assert(meta.AliveBlockGroupCount = 1);
@@ -139,7 +141,7 @@ void TestDataBlockAllocation() {
     const std::string volumePath = "./var/volume_data";
     std::filesystem::remove_all(volumePath);
     {
-        TVolume vol(volumePath, {});
+        TVolume vol(volumePath, {}, false);
 
         auto& meta = *vol.MetaGroups_[0];
         if (meta.AliveBlockGroupCount == 0) {
@@ -158,7 +160,7 @@ void TestDataBlockAllocation() {
     }
 
     {
-        TVolume vol(volumePath, {});
+        TVolume vol(volumePath, {}, false);
 
         auto& meta = *vol.MetaGroups_[0];
         assert(meta.AliveBlockGroupCount = 1);
@@ -185,7 +187,7 @@ void TestDataBlockAllocation() {
     }
 
     {
-        TVolume vol(volumePath, {});
+        TVolume vol(volumePath, {}, false);
 
         auto& meta = *vol.MetaGroups_[0];
         assert(meta.AliveBlockGroupCount = 1);
@@ -220,7 +222,7 @@ void TestInodeDataOps() {
     const std::string volumePath = "./var/volume_inode_data_ops";
     std::filesystem::remove_all(volumePath);
     {
-        TVolume vol(volumePath, {});
+        TVolume vol(volumePath, {}, false);
         auto& meta = *vol.MetaGroups_[0];
         if (meta.AliveBlockGroupCount == 0) {
             meta.AllocateNewBlockGroup();
@@ -248,7 +250,7 @@ void TestInodeDataOps() {
     }
 
     {
-        TVolume vol(volumePath, {});
+        TVolume vol(volumePath, {}, false);
         auto& meta = *vol.MetaGroups_[0];
         auto& bg = *meta.BlockGroups[0];
         TVolume::TInodeDataOps ops(bg);
@@ -287,7 +289,7 @@ void TestInodeDataOps() {
         ops.SetValue(trofimenkov, (float)1.46);
     }
     {
-        TVolume vol(volumePath, {});
+        TVolume vol(volumePath, {}, false);
         auto& meta = *vol.MetaGroups_[0];
         auto& bg = *meta.BlockGroups[0];
         TVolume::TInodeDataOps ops(bg);
@@ -302,7 +304,7 @@ void TestInodeDataOps() {
     }
 
     {
-        TVolume vol(volumePath, {});
+        TVolume vol(volumePath, {}, false);
         auto& meta = *vol.MetaGroups_[0];
         auto& bg = *meta.BlockGroups[0];
         TVolume::TInodeDataOps ops(bg);
@@ -319,7 +321,7 @@ void TestInodeDataOps() {
     }
 
     {
-        TVolume vol(volumePath, {});
+        TVolume vol(volumePath, {}, false);
         auto& meta = *vol.MetaGroups_[0];
         auto& bg = *meta.BlockGroups[0];
         TVolume::TInodeDataOps ops(bg);
@@ -345,14 +347,36 @@ void AssertValuesEqual(const NJK::TInodeValue& lhs, const NJK::TInodeValue& rhs)
     }
 }
 
+static_assert(sizeof(std::mutex) == 40, ""); // FIXME Why?
+static_assert(sizeof(std::shared_mutex) == 56, ""); // FIXME Why?
+static_assert(sizeof(std::condition_variable) == 48, ""); // FIXME Why?
+//static_assert(sizeof(std::stack<TMount*>) == 80, ""); // FIXME Why?
+//static_assert(sizeof(std::stack<std::unique_ptr<TMount>>) == 80, "");
+//static_assert(sizeof(TInode) == 72, "");
+//static_assert(sizeof(std::unique_ptr<size_t>) == 8, "");
+//static_assert(sizeof(std::shared_ptr<size_t>) == 16, "");
+
 void TestStorage() {
     using namespace NJK;
     using TValue = TInodeValue;
 
-    const std::string volumePath = "./var/volume_storage";
-    std::filesystem::remove_all(volumePath);
+    const std::string rootVolumePath = "./var/volume_root";
+    const std::string homeVolumePath = "./var/volume_home";
+    std::filesystem::remove_all(rootVolumePath);
+    std::filesystem::remove_all(homeVolumePath);
+
+    //auto MakeVolume = [](const std::string& path) {
+    //    return TVolumePtr(new TVolume(path, {}));
+    //};
+
     {
-        TStorage storage({volumePath});
+        //auto rootVolume = MakeVolume(rootVolumePath);
+        //auto homeVolume = MakeVolume(homeVolumePath);
+
+        TVolume root(rootVolumePath, {});
+        TVolume home(homeVolumePath, {});
+        TStorage storage(&root);
+        storage.Mount("/home", &home);
 
         storage.Set("/home/trofimenkov/bar/.vimrc", (ui32)10);
         storage.Set("/home/trofimenkov/bar", std::string{"Hello"});

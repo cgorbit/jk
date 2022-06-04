@@ -1,6 +1,6 @@
 #pragma once
 
-#include "volume_fwd.h"
+#include "volume.h"
 #include <memory>
 #include <variant>
 
@@ -12,8 +12,10 @@ namespace NJK {
 
         // TODO mount info
         // And the most INTERESTING part: TMountTreeBuilder
-        TStorage(std::initializer_list<std::string> volumes);
+        explicit TStorage(TVolume* root, const std::string& dir = "/");
         ~TStorage();
+
+        void Mount(const std::string& mountPoint, TVolume* src, const std::string& srcDir = "/");
 
         void Set(const std::string& path, const TValue& value);
         TValue Get(const std::string& path);
