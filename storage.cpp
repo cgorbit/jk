@@ -1,4 +1,5 @@
 #include "storage.h"
+#include "hash_map.h"
 #include "volume.h"
 #include "volume/ops.h"
 
@@ -91,9 +92,9 @@ namespace NJK {
 
     private:
         struct TInodeData {
+            std::atomic<size_t> Ready{0};
             std::shared_mutex Lock;
-            std::condition_variable CondVar;
-            bool Loaded = false;
+            //std::condition_variable CondVar;
             size_t DentryCount = 0;
             TInode Inode;
         };
@@ -108,8 +109,9 @@ namespace NJK {
         };
 
         struct TDentry {
+            std::atomic<size_t> Ready{0};
             std::shared_mutex Lock;
-            std::condition_variable CondVar;
+            //std::condition_variable CondVar;
             std::string InParentName; // for debug: remove or replace by unique ptr?
             TInode::TId InodeId{};
             TInodeData* InodeData{};
@@ -147,12 +149,9 @@ namespace NJK {
             }
         };
 
-        std::shared_mutex DentryCacheLock_;
         TMount Root_;
-        std::unordered_map<TDentryCacheKey, TDentry, TDentryKeyHash> DentryCache_;
-
-        std::shared_mutex InodeCacheLock_;
-        std::unordered_map<TFullInodeId, TInodeData, TFullInodeIdHash> InodeCache_;
+        THashMap<TDentryCacheKey, TDentry, TDentryKeyHash> DentryCache_;
+        THashMap<TFullInodeId, TInodeData, TFullInodeIdHash> InodeCache_;
     };
 
     TStorage::TImpl::TDentryWithVolume TStorage::TImpl::ResolvePath(const std::string& path, bool create) {
@@ -241,37 +240,45 @@ namespace NJK {
         auto* volume = parent.Volume;
 
         const TDentryCacheKey cacheKey{{volume, dentry->InodeId}, childName};
-        if (auto dit = DentryCache_.find(cacheKey); dit != DentryCache_.end()) {
-            return &dit->second;
+        if (auto* p = DentryCache_.FindPtr(cacheKey)) {
+            while (!p->Ready.load()) {
+                ; // TODO
+            }
+            return p;
         }
 
         EnsureInodeData(parent);
-        TInodeData* inodeData = dentry->InodeData;
-
         TInodeData* childInodeData{};
 
-        TInodeDataOps ops(volume);
-        auto addChildInode = [this, &childInodeData, volume](TInode* inode) {
-            TInodeData& inodeData = InodeCache_[{volume, inode->Id}];
-            childInodeData = &inodeData;
-            inodeData.Loaded = true;
-            inodeData.Inode = std::move(*inode);
-        };
-        if (params.Create) {
-            auto childInode = ops.EnsureChild(inodeData->Inode, childName);
-            addChildInode(&childInode);
-        } else {
-            auto childInode = ops.LookupChild(inodeData->Inode, childName);
-            if (!childInode) {
-                return nullptr;
+        Y_TODO("DentryCount");
+
+        {
+            TInodeData* inodeData = dentry->InodeData;
+
+            TInodeDataOps ops(volume);
+            auto addChildInode = [this, &childInodeData, volume](TInode* inode) {
+                TInodeData& inodeData = InodeCache_[{volume, inode->Id}];
+                inodeData.Loaded = true;
+                inodeData.Inode = std::move(*inode);
+                childInodeData = &inodeData;
+            };
+            if (params.Create) {
+                auto childInode = ops.EnsureChild(inodeData->Inode, childName);
+                addChildInode(&childInode);
+            } else {
+                auto childInode = ops.LookupChild(inodeData->Inode, childName);
+                if (!childInode) {
+                    return nullptr;
+                }
+                addChildInode(&*childInode);
             }
-            addChildInode(&*childInode);
         }
 
         auto& childDentry = DentryCache_[cacheKey];
         childDentry.InParentName = childName; // DEBUG TODO
         childDentry.InodeId = childInodeData->Inode.Id;
         childDentry.InodeData = childInodeData;
+        childDentry.Ready.store(1);
 
         return &childDentry;
     }

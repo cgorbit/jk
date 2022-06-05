@@ -31,7 +31,15 @@ namespace NJK {
             return size() * 1.0 / bucket_count();
         }
 
+        T* FindPtr(const TKey& key) {
+            return Lookup(key, false);
+        }
+
         T& operator[] (const TKey& key) {
+            return *Lookup(key, true);
+        }
+
+        T* Lookup(const TKey& key, bool create) {
             const auto hash = Hash_(key);
             float loadFactor = 0;
 
@@ -40,6 +48,7 @@ namespace NJK {
                 std::shared_lock g(ResizeLock_);
                 auto& bucket = Buckets_[hash % Buckets_.size()];
 
+                // TODO RAII for lock
                 auto& lock = *bucket.Lock;
                 while (lock.test_and_set(std::memory_order::acquire)) {
                     //while (lock.test(std::memory_order::relaxed)) {
@@ -53,13 +62,17 @@ namespace NJK {
                     } 
                 }
 
-                if (!value) {
+                if (!value && create) {
                     value = &bucket.Chain.emplace_front(key, T{}).second;
                     ++Size_;
                     loadFactor = Size_.load() * 1.0 / Buckets_.size();
                 }
 
                 lock.clear(std::memory_order::release);
+            }
+
+            if (!value && !create) {
+                return nullptr;
             }
 
             if (loadFactor > MaxLoadFactor_) {
@@ -70,7 +83,7 @@ namespace NJK {
                 }
             }
 
-            return *value;
+            return value;
         }
 
     private:
