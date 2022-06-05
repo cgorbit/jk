@@ -41,6 +41,7 @@ namespace NJK {
         void WriteInode(const TInode& inode);
 
         ui32 AllocateDataBlock();
+        ui32 AllocateDataBlock(const TInode& owner);
         void DeallocateDataBlock(ui32);
 
         TCachedBlockFile::TPage<false> GetDataBlock(ui32 id);

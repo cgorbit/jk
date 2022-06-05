@@ -16,15 +16,17 @@ namespace NJK::NVolume {
         TBlockGroup
     */
 
-    TBlockGroup::TBlockGroup(size_t inFileOffset, ui32 inodeOffset, TCachedBlockFile& file, const TSuperBlock& sb)
+    TBlockGroup::TBlockGroup(size_t inFileOffset, ui32 inodeOffset, TCachedBlockFile& file, const TSuperBlock& sb, const TBlockGroupDescr& descr)
         : SuperBlock(&sb)
         , File_(file, inFileOffset)
         , InodeIndexOffset(inodeOffset)
         , DataBlockIndexOffset(inodeOffset)
         , Inodes{
+            .FreeCount = descr.D.FreeInodeCount, // FIXME Locking
             .Bitmap{NewBuffer()}
         }
         , DataBlocks{
+            .FreeCount = descr.D.FreeDataBlockCount,
             .Bitmap{NewBuffer()}
         }
     {
@@ -40,18 +42,6 @@ namespace NJK::NVolume {
     TBlockGroup::~TBlockGroup() {
         Flush();
     }
-
-    //bool TryAllocate(std::atomic<size_t>& counter) {
-    //    size_t count = counter.load();
-    //    while (true) {
-    //        if (!count) {
-    //            return false;
-    //        }
-    //        if (counter.compare_exchange_weak(count, count - 1)) {
-    //            break;
-    //        }
-    //    }
-    //}
 
     /*
         Inode management

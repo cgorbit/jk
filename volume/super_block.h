@@ -24,7 +24,7 @@ namespace NJK::NVolume {
             return TFixedBuffer::Aligned(BlockSize);
         }
 
-        static constexpr ui32 OnDiskSize = 44;
+        static constexpr ui32 OnDiskSize = 48;
     };
 
 }

@@ -39,4 +39,6 @@ namespace NJK {
     #define Y_ASSERT(cond) assert(cond)
 
     #define Y_VERIFY(cond) if (!(cond)) { std::cerr << #cond << '\n'; std::abort(); }
+
+    #define TODO_BETTER_CONCURRENCY
 }

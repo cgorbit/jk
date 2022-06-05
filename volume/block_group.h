@@ -30,12 +30,13 @@ namespace NJK::NVolume {
 
     class TBlockGroup {
     public:
-        TBlockGroup(size_t inFileOffset, ui32 inodeOffset, TCachedBlockFile& file, const TSuperBlock& sb);
+        TBlockGroup(size_t inFileOffset, ui32 inodeOffset, TCachedBlockFile& file, const TSuperBlock& sb, const TBlockGroupDescr& start);
         ~TBlockGroup();
 
         ui32 GetFreeInodeCount() {
             return Inodes.GetFreeCount();
         }
+
         std::optional<TInode> TryAllocateInode();
         void DeallocateInode(const TInode& inode);
 
@@ -45,12 +46,12 @@ namespace NJK::NVolume {
         ui32 GetFreeDataBlockCount() {
             return DataBlocks.GetFreeCount();
         }
+
         i32 TryAllocateDataBlock();
         void DeallocateDataBlock(ui32);
 
         TCachedBlockFile::TPage<false> GetDataBlock(ui32 id);
         TCachedBlockFile::TPage<true> GetMutableDataBlock(ui32 id);
-        //void WriteDataBlock(const TDataBlock&);
 
     private:
         TFixedBuffer NewBuffer() {
@@ -89,6 +90,8 @@ namespace NJK::NVolume {
         const ui32 DataBlockIndexOffset = 0;
 
         struct TAllocatableItems {
+            TODO_BETTER_CONCURRENCY
+
             std::mutex Lock_;
             size_t FreeCount = 0;
             TBlockBitSet Bitmap; // 4096 bytes
