@@ -4,6 +4,7 @@
 #include "common.h"
 
 #include <cstddef>
+#include <atomic>
 
 namespace NJK {
     // TODO Do I need my own page allocator?
@@ -35,6 +36,7 @@ namespace NJK {
         }
 
         void Set(size_t pos, bool value = true) {
+            //Y_TODO("atomic");
             auto& b = reinterpret_cast<std::byte&>(Buf_.MutableData()[pos / 8]);
             if (value) {
                 b |= static_cast<std::byte>(1 << (pos % 8));
@@ -42,6 +44,26 @@ namespace NJK {
                 b &= static_cast<std::byte>(0b11111111 ^ (1 << (pos % 8)));
             }
         }
+
+        //ui32 TrySetBit(size_t hint = 0) {
+        //    for (size_t i = hint; i < Buf_.Size() / sizeof(size_t); ++i) {
+        //        size_t* wordPtr = reinterpret_cast<size_t*>(Buf_.Data()) + i;
+        //        auto& word = reinterpret_cast<std::atomic<size_t>&>(*wordPtr);
+        //        size_t state = word.load();
+        //        while (true)
+        //            if (state == ~(size_t)0) {
+        //                break;
+        //            }
+        //            size_t inv = ~state;
+        //            size_t newState = ~((inv - 1) & inv);
+        //            Y_TODO("calc bit positiion convert to idx to return");
+        //            if (word.compare_exchange_strong(state, newState)) {
+        //                return idx;
+        //            }
+        //        }
+        //    }
+        //    return -1;
+        //}
 
         void Unset(size_t pos) {
             Set(pos, false);

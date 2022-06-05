@@ -1,5 +1,7 @@
 #include "common.h"
 #include "volume.h"
+#include "volume/ops.h"
+#include "volume/block_group.h"
 #include "storage.h"
 #include "fixed_buffer.h"
 
@@ -8,6 +10,10 @@
 #include <sstream>
 #include <shared_mutex>
 #include <condition_variable>
+#include <filesystem>
+
+using NJK::NVolume::TInodeDataOps;
+using NJK::NVolume::TInodeValue;
 
 void TestDefaultSuperBlockCalc() {
     using namespace NJK;
@@ -24,8 +30,16 @@ void TestDefaultSuperBlockCalc() {
     assert(sb.MaxBlockGroupCount == 15);
     assert(sb.BlockGroupDescriptorsBlockCount == 1);
     assert(sb.ZeroBlockGroupOffset == 4096);
+
     assert(sb.BlockGroupInodeCount == 32768);
+    assert(sb.BlockGroupDataBlockCount == 32768);
     assert(sb.MetaGroupInodeCount == 491520);
+    assert(sb.MetaGroupDataBlockCount == 491520);
+
+    assert(TVolume::TInode::OnDiskSize == 64);
+    const ui32 inodeBlocks = sb.BlockGroupInodeCount * TVolume::TInode::OnDiskSize / sb.BlockSize;
+    assert(inodeBlocks == 64);
+    assert((sb.BlockGroupInodeCount * TVolume::TInode::OnDiskSize) % sb.BlockSize == 0);
 }
 
 void TestSuperBlockSerialization() {
@@ -78,61 +92,61 @@ void TestInodeAllocation() {
     {
         TVolume vol(volumePath, {}, false);
 
-        auto& meta = *vol.MetaGroups_[0];
-        if (meta.AliveBlockGroupCount == 0) {
-            meta.AllocateNewBlockGroup();
-        }
+        //auto& meta = *vol.MetaGroups_[0];
+        //if (meta.AliveBlockGroupCount == 0) {
+        //    meta.AllocateNewBlockGroup();
+        //}
 
-        auto& bg = *meta.BlockGroups[0];
+        //auto& bg = *meta.BlockGroups[0];
 
         for (size_t i = 0; i < 10; ++i) {
-            auto inode = bg.AllocateInode();
+            auto inode = vol.AllocateInode();
             assert(inode.Id == i);
             inode.CreationTime = i;
             inode.Val.BlockCount = i; // just set meaningless value
-            bg.WriteInode(inode);
+            vol.WriteInode(inode);
 
-            assert(bg.ReadInode(i).CreationTime == i);
+            assert(vol.ReadInode(i).CreationTime == i);
         }
     }
 
     {
         TVolume vol(volumePath, {}, false);
 
-        auto& meta = *vol.MetaGroups_[0];
-        assert(meta.AliveBlockGroupCount = 1);
+        //auto& meta = *vol.MetaGroups_[0];
+        //assert(meta.AliveBlockGroupCount = 1);
 
-        auto& bg = *meta.BlockGroups[0];
+        //auto& bg = *meta.BlockGroups[0];
 
         for (size_t i = 0; i < 10; ++i) {
-            auto inode = bg.AllocateInode();
+            auto inode = vol.AllocateInode();
             assert(inode.Id == 10 + i);
         }
         for (size_t i = 0; i < 10; ++i) {
-            auto inode = bg.ReadInode(i);
+            auto inode = vol.ReadInode(i);
             assert(inode.Id == i);
             assert(inode.CreationTime == i);
             assert(inode.Val.BlockCount == i);
         }
 
-        assert(bg.AllocateInode().Id == 20);
+        assert(vol.AllocateInode().Id == 20);
 
-        bg.DeallocateInode({.Id = 7});
-        assert(bg.AllocateInode().Id == 7);
+        vol.DeallocateInode({.Id = 7});
+        assert(vol.AllocateInode().Id == 7);
 
-        bg.DeallocateInode({.Id = 13});
-        bg.DeallocateInode({.Id = 17});
+        vol.DeallocateInode({.Id = 13});
+        vol.DeallocateInode({.Id = 17});
     }
 
     {
         TVolume vol(volumePath, {}, false);
 
-        auto& meta = *vol.MetaGroups_[0];
-        assert(meta.AliveBlockGroupCount = 1);
+        //auto& meta = *vol.MetaGroups_[0];
+        //assert(meta.AliveBlockGroupCount = 1);
 
-        auto& bg = *meta.BlockGroups[0];
+        //auto& bg = *meta.BlockGroups[0];
 
-        assert(bg.AllocateInode().Id == 13);
+        assert(vol.AllocateInode().Id == 13);
     }
 }
 
@@ -144,17 +158,17 @@ void TestDataBlockAllocation() {
     {
         TVolume vol(volumePath, {}, false);
 
-        auto& meta = *vol.MetaGroups_[0];
-        if (meta.AliveBlockGroupCount == 0) {
-            meta.AllocateNewBlockGroup();
-        }
+        //auto& meta = *vol.MetaGroups_[0];
+        //if (meta.AliveBlockGroupCount == 0) {
+            //meta.AllocateNewBlockGroup();
+        //}
 
-        auto& bg = *meta.BlockGroups[0];
+        //auto& bg = *meta.BlockGroups[0];
 
         for (size_t i = 0; i < 10; ++i) {
-            auto blockId = bg.AllocateDataBlock();
+            auto blockId = vol.AllocateDataBlock();
             assert(blockId == i);
-            auto block = bg.GetMutableDataBlock(blockId);
+            auto block = vol.GetMutableDataBlock(blockId);
             block.Buf().MutableData()[100] = i;
             block.Buf().MutableData()[10] = i;
         }
@@ -163,44 +177,44 @@ void TestDataBlockAllocation() {
     {
         TVolume vol(volumePath, {}, false);
 
-        auto& meta = *vol.MetaGroups_[0];
-        assert(meta.AliveBlockGroupCount = 1);
+        //auto& meta = *vol.MetaGroups_[0];
+        //assert(meta.AliveBlockGroupCount = 1);
 
-        auto& bg = *meta.BlockGroups[0];
+        //auto& bg = *meta.BlockGroups[0];
 
         for (size_t i = 0; i < 10; ++i) {
-            auto blockId = bg.AllocateDataBlock();
+            auto blockId = vol.AllocateDataBlock();
             assert(blockId == 10 + i);
         }
         for (size_t i = 0; i < 10; ++i) {
-            auto block = bg.GetDataBlock(i);
+            auto block = vol.GetDataBlock(i);
             assert(block.Buf().Data()[10] == i);
             assert(block.Buf().Data()[100] == i);
         }
 
-        assert(bg.AllocateDataBlock() == 20);
+        assert(vol.AllocateDataBlock() == 20);
 
-        bg.DeallocateDataBlock(7);
-        assert(bg.AllocateDataBlock() == 7);
+        vol.DeallocateDataBlock(7);
+        assert(vol.AllocateDataBlock() == 7);
 
-        bg.DeallocateDataBlock(13);
-        bg.DeallocateDataBlock(17);
+        vol.DeallocateDataBlock(13);
+        vol.DeallocateDataBlock(17);
     }
 
     {
         TVolume vol(volumePath, {}, false);
 
-        auto& meta = *vol.MetaGroups_[0];
-        assert(meta.AliveBlockGroupCount = 1);
+        //auto& meta = *vol.MetaGroups_[0];
+        //assert(meta.AliveBlockGroupCount = 1);
 
-        auto& bg = *meta.BlockGroups[0];
+        //auto& bg = *meta.BlockGroups[0];
 
-        assert(bg.AllocateDataBlock() == 13);
+        assert(vol.AllocateDataBlock() == 13);
     }
 }
 
 template <typename T>
-void AssertValue(const NJK::TVolume::TInode& inode, const T& expect, NJK::TVolume::TInodeDataOps& ops) {
+void AssertValue(const NJK::TVolume::TInode& inode, const T& expect, TInodeDataOps& ops) {
     auto sbinVal = ops.GetValue(inode);
     auto sbinValPtr = std::get_if<T>(&sbinVal);
     if (!sbinValPtr) {
@@ -224,15 +238,15 @@ void TestInodeDataOps() {
     std::filesystem::remove_all(volumePath);
     {
         TVolume vol(volumePath, {}, false);
-        auto& meta = *vol.MetaGroups_[0];
-        if (meta.AliveBlockGroupCount == 0) {
-            meta.AllocateNewBlockGroup();
-        }
-        auto& bg = *meta.BlockGroups[0];
+        //auto& meta = *vol.MetaGroups_[0];
+        //if (meta.AliveBlockGroupCount == 0) {
+        //    meta.AllocateNewBlockGroup();
+        //}
+        //auto& bg = *meta.BlockGroups[0];
 
-        TVolume::TInodeDataOps ops(bg);
+        TInodeDataOps ops(&vol);
 
-        auto root = bg.AllocateInode();
+        auto root = vol.AllocateInode();
 
         ops.AddChild(root, "bin");
         auto sbin = ops.AddChild(root, "sbin");
@@ -254,31 +268,31 @@ void TestInodeDataOps() {
 
     {
         TVolume vol(volumePath, {}, false);
-        auto& meta = *vol.MetaGroups_[0];
-        auto& bg = *meta.BlockGroups[0];
-        TVolume::TInodeDataOps ops(bg);
+        //auto& meta = *vol.MetaGroups_[0];
+        //auto& bg = *meta.BlockGroups[0];
+        TInodeDataOps ops(&vol);
 
-        auto root = bg.ReadInode(0);
+        auto root = vol.ReadInode(0);
         auto got0 = ops.ListChildren(root);
-        const std::vector<TVolume::TInodeDataOps::TDirEntry> expect0{{ 1, "bin" }, { 2, "sbin" }, { 3, "root" }, { 4, "home" }, { 5, "etc" }};
+        const std::vector<TInodeDataOps::TDirEntry> expect0{{ 1, "bin" }, { 2, "sbin" }, { 3, "root" }, { 4, "home" }, { 5, "etc" }};
         assert(expect0 == got0);
 
-        auto home = bg.ReadInode(4);
+        auto home = vol.ReadInode(4);
         auto got1 = ops.ListChildren(home);
-        const std::vector<TVolume::TInodeDataOps::TDirEntry> expect1{{ 6, "trofimenkov" }, { 7, "snowball" }};
+        const std::vector<TInodeDataOps::TDirEntry> expect1{{ 6, "trofimenkov" }, { 7, "snowball" }};
         assert(expect1 == got1);
 
         assert(ops.LookupChild(home, "snowball")->Id == 7);
         assert(!ops.LookupChild(home, "sdf").has_value());
 
-        auto trofimenkov = bg.ReadInode(6);
+        auto trofimenkov = vol.ReadInode(6);
         auto got2 = ops.ListChildren(trofimenkov);
-        const std::vector<TVolume::TInodeDataOps::TDirEntry> expect2{{ 8, ".vim" } };
+        const std::vector<TInodeDataOps::TDirEntry> expect2{{ 8, ".vim" } };
         assert(expect2 == got2);
 
         ops.RemoveChild(root, "root");
         auto got3 = ops.ListChildren(root);
-        const std::vector<TVolume::TInodeDataOps::TDirEntry> expect3{{ 1, "bin" }, { 2, "sbin" }, { 4, "home" }, { 5, "etc" }};
+        const std::vector<TInodeDataOps::TDirEntry> expect3{{ 1, "bin" }, { 2, "sbin" }, { 4, "home" }, { 5, "etc" }};
         assert(expect3 == got3);
 
         assert(ops.LookupChild(root, "home")->Id == 4);
@@ -294,12 +308,12 @@ void TestInodeDataOps() {
     }
     {
         TVolume vol(volumePath, {}, false);
-        auto& meta = *vol.MetaGroups_[0];
-        auto& bg = *meta.BlockGroups[0];
-        TVolume::TInodeDataOps ops(bg);
+        //auto& meta = *vol.MetaGroups_[0];
+        //auto& bg = *meta.BlockGroups[0];
+        TInodeDataOps ops(&vol);
 
-        auto trofimenkov = bg.ReadInode(6);
-        auto sbin = bg.ReadInode(2);
+        auto trofimenkov = vol.ReadInode(6);
+        auto sbin = vol.ReadInode(2);
 
         AssertValue(sbin, (ui32)777, ops);
         AssertValue(trofimenkov, (float)1.46, ops);
@@ -310,13 +324,13 @@ void TestInodeDataOps() {
 
     {
         TVolume vol(volumePath, {}, false);
-        auto& meta = *vol.MetaGroups_[0];
-        auto& bg = *meta.BlockGroups[0];
-        TVolume::TInodeDataOps ops(bg);
+        //auto& meta = *vol.MetaGroups_[0];
+        //auto& bg = *meta.BlockGroups[0];
+        TInodeDataOps ops(&vol);
 
-        auto home = bg.ReadInode(4);
-        auto sbin = bg.ReadInode(2);
-        auto trofimenkov = bg.ReadInode(6);
+        auto home = vol.ReadInode(4);
+        auto sbin = vol.ReadInode(2);
+        auto trofimenkov = vol.ReadInode(6);
 
         AssertValue(home, std::string{"Sweet Home"}, ops);
         AssertValue(sbin, (ui32)777, ops);
@@ -328,22 +342,22 @@ void TestInodeDataOps() {
 
     {
         TVolume vol(volumePath, {}, false);
-        auto& meta = *vol.MetaGroups_[0];
-        auto& bg = *meta.BlockGroups[0];
-        TVolume::TInodeDataOps ops(bg);
+        //auto& meta = *vol.MetaGroups_[0];
+        //auto& bg = *meta.BlockGroups[0];
+        TInodeDataOps ops(&vol);
 
-        auto trofimenkov = bg.ReadInode(6);
+        auto trofimenkov = vol.ReadInode(6);
 
         AssertValue(trofimenkov, (ui32)1987, ops);
 //ops.DumpTree(std::cerr);
     }
 }
 
-void AssertValuesEqual(const NJK::TInodeValue& lhs, const NJK::TInodeValue& rhs) {
+void AssertValuesEqual(const TInodeValue& lhs, const TInodeValue& rhs) {
     using namespace NJK;
 
     assert(lhs.index() == rhs.index());
-    if (std::holds_alternative<NJK::TBlobView>(lhs)) {
+    if (std::holds_alternative<NVolume::TBlobView>(lhs)) {
         throw std::runtime_error("Can't compare TBlobView");
     } else if (std::holds_alternative<std::string>(lhs)) {
         assert(std::get<std::string>(lhs) == std::get<std::string>(rhs));
@@ -374,7 +388,7 @@ static_assert(sizeof(std::condition_variable) == 48, ""); // FIXME Why?
 // must be sorted in ascii order
 void AssertTreeEqual(NJK::TVolume& vol, std::string_view expect) {
     using namespace NJK;
-    TVolume::TInodeDataOps ops(&vol);
+    TInodeDataOps ops(&vol);
     while (expect.size() && expect[0] == '\n') {
         expect = std::string_view(&*(expect.begin() + 1), expect.size() - 1);
     }
@@ -423,7 +437,7 @@ root
     .bashrc = string "config"
 )");
 
-            TVolume::TInodeDataOps ops(&root);
+            TInodeDataOps ops(&root);
             auto rootInode = root.GetRoot();
 
             assert(ops.ListChildren(rootInode).size() == 3);
@@ -443,7 +457,7 @@ trofimenkov
     bar = string "Hello"
         .vimrc = ui32 10
 )");
-            TVolume::TInodeDataOps ops(&home);
+            TInodeDataOps ops(&home);
             auto rootInode = home.GetRoot();
 
             assert(ops.ListChildren(rootInode).size() == 1);
@@ -742,7 +756,7 @@ int main() {
 
     CheckOnDiskSize<TVolume::TSuperBlock>();
     CheckOnDiskSize<TVolume::TInode>();
-    CheckOnDiskSize<TVolume::TBlockGroupDescr>();
+    CheckOnDiskSize<NVolume::TBlockGroupDescr>();
 
     TestInodeAllocation();
     TestDataBlockAllocation();

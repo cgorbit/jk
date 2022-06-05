@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <exception>
+#include <cassert>
 #include <stdexcept>
 #include <memory>
 #include <cstdlib>
@@ -33,6 +34,7 @@ namespace NJK {
         if ((expr) == -1) { throw std::system_error(errno, std::generic_category(), std::string(#expr)); }
 
     #define Y_FAIL(msg) throw std::runtime_error(msg)
+    #define Y_TODO(msg) Y_FAIL("TODO " msg)
 
     #define Y_ASSERT(cond) assert(cond)
 

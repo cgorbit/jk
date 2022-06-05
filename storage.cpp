@@ -1,5 +1,6 @@
 #include "storage.h"
 #include "volume.h"
+#include "volume/ops.h"
 
 #include <stack>
 #include <cassert>
@@ -9,6 +10,8 @@
 #include <condition_variable>
 
 namespace NJK {
+
+    using NVolume::TInodeDataOps;
 
     class TStorage::TImpl {
     public:
@@ -34,7 +37,7 @@ namespace NJK {
             auto node = ResolvePath(path, true);
             Y_VERIFY(node.Dentry);
             EnsureInodeData(node);
-            TVolume::TInodeDataOps ops(node.Volume);
+            TInodeDataOps ops(node.Volume);
             ops.SetValue(node.Dentry->InodeData->Inode, value);
         }
 
@@ -44,7 +47,7 @@ namespace NJK {
                 return {};
             }
             EnsureInodeData(node);
-            TVolume::TInodeDataOps ops(node.Volume);
+            TInodeDataOps ops(node.Volume);
             return ops.GetValue(node.Dentry->InodeData->Inode);
         }
 
@@ -247,7 +250,7 @@ namespace NJK {
 
         TInodeData* childInodeData{};
 
-        TVolume::TInodeDataOps ops(volume);
+        TInodeDataOps ops(volume);
         auto addChildInode = [this, &childInodeData, volume](TInode* inode) {
             TInodeData& inodeData = InodeCache_[{volume, inode->Id}];
             childInodeData = &inodeData;
@@ -283,7 +286,7 @@ namespace NJK {
 
         TDentryWithVolume cur = Root_;
 
-        //TVolume::TInodeDataOps ops(volume);
+        //TInodeDataOps ops(volume);
 
         while (start != path.end()) {
             // Follow last mount
@@ -322,7 +325,7 @@ namespace NJK {
             ++start;
         }
 
-        TVolume::TInodeDataOps ops(volume);
+        TInodeDataOps ops(volume);
 
         while (start != path.end()) {
             auto end = start;

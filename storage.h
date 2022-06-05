@@ -1,6 +1,7 @@
 #pragma once
 
 #include "volume.h"
+#include "volume/value.h"
 #include <memory>
 #include <variant>
 
@@ -8,7 +9,7 @@ namespace NJK {
 
     class TStorage {
     public:
-        using TValue = TInodeValue; // TODO Copy + static_assert?
+        using TValue = NVolume::TInodeValue; // TODO Copy + static_assert?
 
         // TODO mount info
         // And the most INTERESTING part: TMountTreeBuilder
@@ -19,6 +20,9 @@ namespace NJK {
 
         void Set(const std::string& path, const TValue& value, ui32 deadline = 0);
         TValue Get(const std::string& path);
+
+        // TODO
+        void Erase(const std::string& path, const TValue& value);
 
     private:
         class TImpl;
