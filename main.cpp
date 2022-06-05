@@ -4,6 +4,7 @@
 #include "volume/block_group.h"
 #include "storage.h"
 #include "fixed_buffer.h"
+#include "hash_map.h"
 
 #include <cassert>
 #include <iostream>
@@ -11,6 +12,7 @@
 #include <shared_mutex>
 #include <condition_variable>
 #include <filesystem>
+#include <unordered_map>
 
 using NJK::NVolume::TInodeDataOps;
 using NJK::NVolume::TInodeValue;
@@ -770,6 +772,23 @@ int main() {
     TestStorageNonRoot();
 
     std::cerr << '\n';
+
+{
+    std::unordered_map<size_t, size_t> m;
+    std::cerr << "load_factor: " << m.load_factor() << '\n';
+    std::cerr << "max_load_factor: " << m.max_load_factor() << '\n';
+    std::cerr << "bucket_count: " << m.bucket_count() << '\n';
+}
+
+    THashMap<size_t, size_t> my;
+
+    for (size_t i = 3; i < 1000; i = i * 3 + 1) {
+        my[i] = i * 10;
+        std::cerr << "\nmy[" << i << "] = " << my[i] << '\n';
+        std::cerr << "bucket_count: " << my.bucket_count() << '\n';
+        std::cerr << "load_factor: " << my.load_factor() << '\n';
+        std::cerr << "size: " << my.size() << '\n';
+    }
 
     return 0;
 }
