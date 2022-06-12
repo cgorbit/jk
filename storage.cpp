@@ -103,6 +103,14 @@ namespace NJK {
             TChildNameLockGuard& operator= (const TChildNameLockGuard&) = delete;
             TChildNameLockGuard& operator= (TChildNameLockGuard&&) noexcept;
 
+            const std::string& Name() const {
+                return Name_;
+            }
+
+            const TDentry* Dentry() const {
+                return Dentry_;
+            }
+
             void Swap(TChildNameLockGuard& other) noexcept;
 
         private:
@@ -125,10 +133,15 @@ namespace NJK {
             bool CreateLocked = false;
             TCondVar CreateCondVar;
 
+            size_t DirReadLocked = 0;
             // Serialize concurrent directory structure modification
             // TODO DirWriteLocked is to slow if we wait each modification to disk write
             bool DirWriteLocked = false;
             TCondVar DirWriteUnlockedCondVar;
+
+            size_t ValueReadLocked = 0;
+            size_t ValueWriteLocked = 0;
+            TCondVar ValueWriteUnlockedCondVar;
 
             // Prevent from Exists to NotExists
             size_t PreventRemoval = 0;
@@ -158,24 +171,156 @@ namespace NJK {
             // returns guard
             [[nodiscard]] TChildNameLockGuard LockChild(const std::string& name);
 
-            std::unique_ptr<TInode> EnsureChild(const std::string& name) {
-                Y_TODO("");
-            }
-            std::unique_ptr<TInode> LookupChild(const std::string& name) {
-                Y_TODO("");
+            std::unique_ptr<TInode> EnsureChild(const std::string& name, const TChildNameLockGuard& g) {
+                Y_ENSURE(g.Name() == name && g.Dentry() == this);
+
+                auto inode = LookupChild(name, g);
+                if (inode) {
+                    return inode;
+                }
+
+                TInode ret;
+                {
+                    TODO("Write Data into new Data Block and then Swap fast")
+
+                    LockDirForWrite();
+                    Y_DEFER([this] {
+                        UnlockDirForWrite();
+                    });
+                    TInodeDataOps ops(Volume);
+                    ret = ops.EnsureChild(*Inode, name);
+                }
+                return std::make_unique<TInode>(std::move(ret));
             }
 
-            void SetValue(const TValue&, ui32 deadline) {
-                Y_TODO();
+            std::unique_ptr<TInode> LookupChild(const std::string& name, const TChildNameLockGuard& g) {
+                Y_ENSURE(g.Name() == name && g.Dentry() == this);
+                
+                LockDirForRead();
+                Y_DEFER([this] {
+                    UnlockDirForRead();
+                });
+
+                TInodeDataOps ops(Volume);
+                auto inode = ops.LookupChild(*Inode, name);
+                if (!inode) {
+                    return {};
+                }
+                return std::make_unique<TInode>(std::move(*inode));
+            }
+
+            /////////////////////////////////////////////////////////////////
+            TODO("1. Combine Dir and Value in TInode.Data")
+            TODO("2. Don't RdWrLock all this. Write Dir/Value in new Data Blocks and then replace")
+            TODO("3. Store small TValue in TDentry itself")
+            /////////////////////////////////////////////////////////////////
+
+            void LockDirForRead() {
+                auto g = LockGuard();
+                while (DirWriteLocked) {
+                    DirWriteUnlockedCondVar.Wait(Lock);
+                }
+                ++DirReadLocked;
+            }
+
+            void UnlockDirForRead() {
+                bool notify = false;
+                {
+                    auto g = LockGuard();
+                    if (--DirReadLocked == 0) {
+                        notify = true;
+                    }
+                }
+                DirWriteUnlockedCondVar.NotifyAll(); // FIXME
+            }
+
+            void LockDirForWrite() {
+                TODO("Write Data into new Data Block and then Swap fast")
+
+                auto g = LockGuard();
+                while (DirReadLocked || DirWriteLocked) {
+                    DirWriteUnlockedCondVar.Wait(Lock);
+                }
+                DirWriteLocked = true;
+            }
+
+            void UnlockDirForWrite() {
+                {
+                    auto g = LockGuard();
+                    DirWriteLocked = false;
+                }
+                DirWriteUnlockedCondVar.NotifyAll(); // FIXME
+            }
+
+            /////////////////////////////////////////////////////////////////
+
+            void LockValueForRead() {
+                auto g = LockGuard();
+                while (ValueWriteLocked) {
+                    ValueWriteUnlockedCondVar.Wait(Lock);
+                }
+                ++ValueReadLocked;
+            }
+
+            void UnlockValueForRead() {
+                bool notify = false;
+                {
+                    auto g = LockGuard();
+                    if (--ValueReadLocked == 0) {
+                        notify = true;
+                    }
+                }
+                ValueWriteUnlockedCondVar.NotifyAll(); // FIXME
+            }
+
+            void LockValueForWrite() {
+                TODO("Write Data into new Data Block and then Swap fast")
+
+                auto g = LockGuard();
+                while (ValueReadLocked || ValueWriteLocked) {
+                    ValueWriteUnlockedCondVar.Wait(Lock);
+                }
+                ValueWriteLocked = true;
+            }
+
+            void UnlockValueForWrite() {
+                {
+                    auto g = LockGuard();
+                    ValueWriteLocked = false;
+                }
+                ValueWriteUnlockedCondVar.NotifyAll(); // FIXME
+            }
+
+            /////////////////////////////////////////////////////////////////
+
+            void SetValue(const TValue& value, ui32 deadline) {
+                LockValueForWrite();
+                Y_DEFER([this] {
+                    UnlockValueForWrite();
+                });
+
+                TInodeDataOps ops(Volume);
+                ops.SetValue(*Inode, value, deadline);
             }
 
             void UnsetValue() {
-                Y_TODO();
+                LockValueForWrite();
+                Y_DEFER([this] {
+                    UnlockValueForWrite();
+                });
+
+                TInodeDataOps ops(Volume);
+                ops.UnsetValue(*Inode);
             }
 
             TValue GetValue() {
-                Y_TODO();
-                return {};
+                LockValueForRead();
+                Y_DEFER([this] {
+                    UnlockValueForRead();
+                });
+
+                TInodeDataOps ops(Volume);
+                return ops.GetValue(*Inode);
             }
         };
 
@@ -478,9 +623,9 @@ namespace NJK {
 
             TInodePtr childInode;
             if (params.Create) {
-                childInode = parent->EnsureChild(childName);
+                childInode = parent->EnsureChild(childName, childGuard);
             } else {
-                childInode = parent->LookupChild(childName);
+                childInode = parent->LookupChild(childName, childGuard);
             }
 
             if (!childInode) {
@@ -525,10 +670,12 @@ namespace NJK {
                         break;
                     }
                 }
+
+                Y_TODO("");
             }
         }
 
-        Y_FAIL("");
+        Y_UNREACHABLE;
         return {};
     }
 

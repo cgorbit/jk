@@ -8,6 +8,8 @@
 
 namespace NJK::NVolume {
 
+    TODO("Return Inodes in smart pointers")
+
     class TInodeDataOps {
     public:
         using TValue = TInodeValue;
