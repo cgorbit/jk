@@ -1,5 +1,7 @@
 #pragma once
 
+#include "lock.h"
+
 #include <unordered_map>
 #include <shared_mutex>
 #include <list>
@@ -8,14 +10,73 @@
 
 namespace NJK {
 
-    template <typename K, typename T, typename Hash = std::hash<K>>
+    extern const std::size_t HashTablePrimes[];
+
+    template <typename K, typename T, typename Hash = std::hash<K>, typename L = TNaiveSpinLock>
     class THashMap {
+    private:
+        struct TKeyValue;
+
     public:
         using TKey = K;
+        using TLock = L;
+
+        class TValuePtr {
+        public:
+            TValuePtr() = default;
+
+            explicit TValuePtr(TKeyValue* ptr)
+                : Ptr_(ptr)
+            {
+            }
+
+            TValuePtr(const TValuePtr&) = delete;
+
+            TValuePtr(TValuePtr&& other) noexcept {
+                Swap(other);
+            }
+
+            ~TValuePtr() {
+                if (Ptr_) {
+                    --Ptr_->RefCount;
+                }
+            }
+
+            explicit operator bool () const {
+                return Ptr_ != nullptr;
+            }
+
+            TValuePtr& operator=(const TValuePtr&) = delete;
+
+            TValuePtr& operator=(TValuePtr&& other) noexcept {
+                TValuePtr tmp(std::move(other));
+                Swap(tmp);
+                return *this;
+            }
+
+            T* operator-> () const {
+                return &Ptr_->Value;
+            }
+
+            T& operator* () const {
+                return Ptr_->Value;
+            }
+
+            T* Ptr() const {
+                return &Ptr_->Value;
+            }
+
+            void Swap(TValuePtr& other) {
+                std::swap(Ptr_, other.Ptr_);
+            }
+
+        private:
+            TKeyValue* Ptr_ = nullptr;
+        };
 
         THashMap() {
             std::unique_lock g(ResizeLock_);
-            Resize(1);
+            Resize(HashTablePrimes[CapacityIdx_]);
         }
 
         size_t bucket_count() {
@@ -31,59 +92,68 @@ namespace NJK {
             return size() * 1.0 / bucket_count();
         }
 
-        T* FindPtr(const TKey& key) {
-            return Lookup(key, false);
+        struct TLookupResult {
+            TValuePtr Obj;
+            bool Created = false;
+        };
+
+        TValuePtr Find(const TKey& key) {
+            return Lookup(key, false).Obj;
         }
 
-        T& operator[] (const TKey& key) {
-            return *Lookup(key, true);
+        TValuePtr operator[] (const TKey& key) {
+            return Lookup(key, true).Obj;
         }
 
-        T* Lookup(const TKey& key, bool create) {
+        TLookupResult emplace_key(const TKey& key) {
+            return Lookup(key, true);
+        }
+
+    private:
+        TLookupResult Lookup(const TKey& key, bool create) {
             const auto hash = Hash_(key);
             float loadFactor = 0;
+            bool created = false;
 
-            T* value = nullptr;
+            TKeyValue* kv = nullptr;
             {
                 std::shared_lock g(ResizeLock_);
                 auto& bucket = Buckets_[hash % Buckets_.size()];
 
-                // TODO RAII for lock
-                auto& lock = *bucket.Lock;
-                while (lock.test_and_set(std::memory_order::acquire)) {
-                    //while (lock.test(std::memory_order::relaxed)) {
-                    //}
-                }
+                auto g1 = MakeGuard(*bucket.Lock);
 
                 for (auto& item : bucket.Chain) {
-                    if (item.first == key) {
-                        value = &item.second;
+                    if (item.Key == key) {
+                        kv = &item;
                         break;
                     } 
                 }
 
-                if (!value && create) {
-                    value = &bucket.Chain.emplace_front(key, T{}).second;
+                if (!kv && create) {
+                    kv = &bucket.Chain.emplace_front(key);
                     ++Size_;
                     loadFactor = Size_.load() * 1.0 / Buckets_.size();
+                    created = true;
                 }
 
-                lock.clear(std::memory_order::release);
+                if (kv) {
+                    ++kv->RefCount;
+                }
             }
 
-            if (!value && !create) {
-                return nullptr;
+            if (!kv && !create) {
+                return TLookupResult{TValuePtr{}, false};
             }
 
             if (loadFactor > MaxLoadFactor_) {
                 std::unique_lock g(ResizeLock_);
                 loadFactor = Size_.load() * 1.0 / Buckets_.size();
                 if (loadFactor > MaxLoadFactor_) {
-                    Resize(Buckets_.size() << 1);
+                    Resize(HashTablePrimes[++CapacityIdx_]);
                 }
             }
 
-            return value;
+            return {TValuePtr{kv}, created};
         }
 
     private:
@@ -96,34 +166,52 @@ namespace NJK {
                 for (auto it = oldChain.begin(); it != oldChain.end();) {
                     auto next = it;
                     ++next;
-                    const auto hash = Hash_(it->first);
+                    const auto hash = Hash_(it->Key);
                     auto& newBucket = newBuckets[hash % newBuckets.size()];
                     newBucket.Chain.splice(newBucket.Chain.begin(), oldChain, it);
                     it = next;
                 }
             }
             for (auto& bucket : newBuckets) {
-                bucket.Lock.reset(new std::atomic_flag());
+                bucket.Lock.reset(new TLock());
             }
 
             Buckets_.swap(newBuckets);
         }
 
     private:
+        struct TKeyValue {
+            TKeyValue() = default;
+
+            template <typename U>
+            TKeyValue(U&& key)
+                : Key(std::forward<U>(key))
+            {
+            }
+
+            template <typename U, typename V>
+            TKeyValue(U&& key, V&& value)
+                : Key(std::forward<U>(key))
+                , Value(std::forward<V>(value))
+            {
+            }
+
+            TKey Key{};
+            T Value{};
+            std::atomic<size_t> RefCount{0}; // atomic, because bucket lock is changed on hash table resize
+        };
+
         const float MaxLoadFactor_ = 1.0;
         std::shared_mutex ResizeLock_;
-        using TValueType = std::pair<TKey, T>;
-        //struct TValueType {
-        //    TKey Key{};
-        //    T Value{};
-        //};
+        //using TKeyValue = std::pair<TKey, TValueWithRefCount>;
         struct TBucket {
-            std::unique_ptr<std::atomic_flag> Lock;
-            std::list<TValueType> Chain;
+            std::unique_ptr<TLock> Lock;
+            std::list<TKeyValue> Chain;
         };
         std::vector<TBucket> Buckets_;
         std::atomic<size_t> Size_{0};
         Hash Hash_{};
+        size_t CapacityIdx_ = 0;
     };
 
 }

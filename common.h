@@ -41,4 +41,27 @@ namespace NJK {
     #define Y_VERIFY(cond) if (!(cond)) { std::cerr << #cond << '\n'; std::abort(); }
 
     #define TODO_BETTER_CONCURRENCY
+
+    namespace NPrivate {
+        template <typename F>
+        class TDeferCall {
+        public:
+            TDeferCall(F&& f)
+                : Func_(std::forward<F>(f))
+            {
+            }
+
+            ~TDeferCall() {
+                Func_();
+            }
+
+        private:
+            F Func_;
+        };
+    }
+
+    #define CONCAT_INNER(a, b) a ## b
+    #define CONCAT(a, b) CONCAT_INNER(a, b)
+
+    #define Y_DEFER(f) const NPrivate::TDeferCall CONCAT(defer, __LINE__)(f)
 }

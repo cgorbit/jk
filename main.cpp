@@ -421,8 +421,9 @@ void TestStorage0() {
         TVolume root(rootVolumePath, {});
         TVolume home(homeVolumePath, {});
         {
-            TStorage storage(&root);
-            storage.Mount("/home", &home);
+            auto storage = TStorageBuilder(&root)
+                .Mount("/home", &home)
+                .Build();
 
             storage.Set("/home/trofimenkov/bar/.vimrc", (ui32)10);
             storage.Set("//home/trofimenkov/bar", std::string{"Hello"});
@@ -502,7 +503,7 @@ void TestStorage1() {
         VOLUME(lib);
 
         {
-            TStorage storage(&root);
+            auto storage = TStorageBuilder(&root).Build();
             storage.Set("/home/petrk/age", (ui32)43);
             storage.Set("/home/petrk", true);
             storage.Set("/home", (float)1024);
@@ -514,7 +515,7 @@ home = float 1024
 )");
 
         {
-            TStorage storage(&homeV0);
+            auto storage = TStorageBuilder(&homeV0).Build();
             storage.Set("/lazy", std::string{"old_lazy_attr"}); // will be overriden
             storage.Set("/lazy/.bashrc", std::string{"lazy-old-bashrc"}); // will be hidden
         }
@@ -523,7 +524,7 @@ lazy = string "old_lazy_attr"
     .bashrc = string "lazy-old-bashrc"
 )");
         {
-            TStorage storage(&homeV1);
+            auto storage = TStorageBuilder(&homeV1).Build();
             storage.Set("/leva/.vimrc", std::string{"Yandex.News"}); // will not be unavailable
             storage.Set("/leva", (ui32)40);
         }
@@ -533,7 +534,7 @@ leva = ui32 40
 )");
 
         {
-            TStorage storage(&homeV2);
+            auto storage = TStorage::Build(&homeV1);
             storage.Set("/trofimenkov/.vimrc", std::string{"set hls"});
             storage.Set("/trofimenkov", (ui32)35);
             storage.Set("/lazy", std::string{"new-lazy-attr"});
@@ -547,7 +548,7 @@ trofimenkov = ui32 35
 )");
 
         {
-            TStorage storage(&lib);
+            auto storage = TStorage::Build(&lib);
             storage.Set("/ld-linux.so.2", std::string{"attr0"});
             storage.Set("/distbuild/libdistbuild.so.2", (float)0.5);
             storage.Set("/distbuild/libdistbuild.so.3", (double)0.25);
@@ -560,13 +561,14 @@ ld-linux.so.2 = string "attr0"
 )");
 
         {
-            TStorage storage(&root);
-            storage.Mount("/home", &homeV0);
-            storage.Mount("/home", &homeV1);
-            storage.Mount("/home", &homeV2);
-            storage.Mount("/mnt", &cdrom);
-            storage.Mount("/lib", &lib);
-            storage.Mount("/usr/lib", &lib);
+            auto storage = TStorageBuilder(&root)
+                .Mount("/home", &homeV0)
+                .Mount("/home", &homeV1)
+                .Mount("/home", &homeV2)
+                .Mount("/mnt", &cdrom)
+                .Mount("/lib", &lib)
+                .Mount("/usr/lib", &lib)
+                .Build();
 
             AssertValuesEqual(storage.Get("/home"), (float)1024);
 
@@ -625,13 +627,14 @@ ld-linux.so.2 = string "attr0"
 )");
 
         {
-            TStorage storage(&root);
-            storage.Mount("/home", &homeV0);
-            storage.Mount("/home", &homeV1);
-            storage.Mount("/home", &homeV2);
-            storage.Mount("/mnt", &cdrom);
-            storage.Mount("/lib", &lib);
-            storage.Mount("/usr/lib", &lib);
+            auto storage = TStorageBuilder(&root)
+                .Mount("/home", &homeV0)
+                .Mount("/home", &homeV1)
+                .Mount("/home", &homeV2)
+                .Mount("/mnt", &cdrom)
+                .Mount("/lib", &lib)
+                .Mount("/usr/lib", &lib)
+                .Build();
 
             storage.Set("/home/alex-sh", (ui32)12);
             storage.Set("/home/alex-sh/philosophy/fromm", TValue{std::string{"Erich Fromm"}});
@@ -702,7 +705,7 @@ void TestStorageNonRoot() {
         VOLUME(home);
 
         {
-            TStorage storage(&rootOld);
+            auto storage = TStorage::Build(&rootOld);
             storage.Set("/home", std::string{"old-root-home"});
             storage.Set("/home/trofimenkov", std::string{"dev"});
             storage.Set("/home/trofimenkov/attr", false);
@@ -723,7 +726,7 @@ home = string "old-root-home"
 )");
 
         {
-            TStorage storage(&rootNew);
+            auto storage = TStorage::Build(&rootNew);
             storage.Set("/home", std::string{"new-root-home"});
         }
         AssertTreeEqual(rootNew, R"(
@@ -731,11 +734,12 @@ home = string "new-root-home"
 )");
 
         {
-            TStorage storage(&rootNew);
-            storage.Mount("/home", &home);
-            storage.Mount("/etc", &rootOld, "/etc");
-            storage.Mount("/etc", &rootOld, "/etc");
-            storage.Mount("/bin", &rootOld, "/bin");
+            auto storage = TStorageBuilder(&rootNew)
+                .Mount("/home", &home)
+                .Mount("/etc", &rootOld, "/etc")
+                .Mount("/etc", &rootOld, "/etc")
+                .Mount("/bin", &rootOld, "/bin")
+                .Build();
 
             AssertValuesEqual(storage.Get("/home/trofimenkov"), {});
             AssertValuesEqual(storage.Get("/home/trofimenkov/attr"), {});
@@ -783,8 +787,8 @@ int main() {
     THashMap<size_t, size_t> my;
 
     for (size_t i = 3; i < 1000; i = i * 3 + 1) {
-        my[i] = i * 10;
-        std::cerr << "\nmy[" << i << "] = " << my[i] << '\n';
+        *my[i] = i * 10;
+        std::cerr << "\nmy[" << i << "] = " << *my[i] << '\n';
         std::cerr << "bucket_count: " << my.bucket_count() << '\n';
         std::cerr << "load_factor: " << my.load_factor() << '\n';
         std::cerr << "size: " << my.size() << '\n';

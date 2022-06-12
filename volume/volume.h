@@ -50,6 +50,8 @@ namespace NJK {
         const TSuperBlock& GetSuperBlock() const;
         static TSuperBlock CalcSuperBlock(const TSettings& settings);
 
+        const std::string& GetFsDir() const;
+
     private:
         class TImpl;
         std::unique_ptr<TImpl> Impl_;

@@ -4,6 +4,8 @@
 
 namespace NJK::NVolume {
 
+    // FIXME Align on 64 bytes to be cache lines friendly?
+
     struct TInode {
         using TId = ui32;
 
@@ -26,6 +28,7 @@ namespace NJK::NVolume {
         // on-disk
         ui32 CreationTime{};
         ui32 ModTime{};
+
         struct {
             EType Type{};
             ui16 BlockCount = 0; // up to 256 MiB
@@ -33,11 +36,13 @@ namespace NJK::NVolume {
             ui32 Deadline = 0;
             // ui16 Version = 0; // TODO Generation
         } Val;
+
         struct {
-            bool HasChildren = false;
+            bool HasChildren = false; // FIXME ChildCount?
             ui16 BlockCount = 0; // FIXME ui8 is enough
             ui32 FirstBlockId = 0;
         } Dir;
+
         char Data[38] = {0};
 
         static constexpr ui32 ToSkip = 0;

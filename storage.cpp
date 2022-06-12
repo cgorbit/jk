@@ -6,9 +6,16 @@
 #include <stack>
 #include <cassert>
 #include <string_view>
+#include <sstream>
 #include <mutex>
 #include <shared_mutex>
 #include <condition_variable>
+
+template <typename T>
+T CombineHashes(T l, T r) {
+    return std::hash<T>{}(l) ^ r;
+    //return l ^ (r << 1);
+}
 
 namespace NJK {
 
@@ -19,27 +26,18 @@ namespace NJK {
         using TInode = TVolume::TInode;
 
         TImpl(TVolume* rootVolume, const std::string& rootDir) {
-            auto tmp = ResolveInVolumePath(rootVolume, rootDir); // FIXME Better?
-            // TODO Locking here
-            auto& inodeData = InodeCache_[{rootVolume, tmp.Id}];
-            inodeData.Inode = std::move(tmp);
-            inodeData.Loaded = true;
-            inodeData.DentryCount = 1;
-
             Root_.Volume = rootVolume;
-            Root_.Dentry.reset(new TDentry());
-            Root_.Dentry->InParentName = "/";
-            Root_.Dentry->InodeId = inodeData.Inode.Id;
-            Root_.Dentry->InodeData = &inodeData;
+            Root_.Dentry = EnsureMountedInode(rootVolume, rootDir);
         }
 
         void Set(const std::string& path, const TValue& value, ui32 deadline) {
             (void)deadline; // TODO
             auto node = ResolvePath(path, true);
             Y_VERIFY(node.Dentry);
-            EnsureInodeData(node);
-            TInodeDataOps ops(node.Volume);
-            ops.SetValue(node.Dentry->InodeData->Inode, value);
+            //EnsureInodeData(node);
+            //TInodeDataOps ops(node.Volume);
+            //ops.SetValue(node.Dentry->InodeData->Inode, value);
+            node.Dentry->SetValue(value, deadline);
         }
 
         TValue Get(const std::string& path) {
@@ -47,12 +45,18 @@ namespace NJK {
             if (!node.Dentry) {
                 return {};
             }
-            EnsureInodeData(node);
-            TInodeDataOps ops(node.Volume);
-            return ops.GetValue(node.Dentry->InodeData->Inode);
+            //EnsureInodeData(node);
+            //TInodeDataOps ops(node.Volume);
+            //return ops.GetValue(node.Dentry->InodeData->Inode);
+            return node.Dentry->GetValue();
         }
 
-        void Remove(const std::string& path) {
+        void Erase(const std::string& path) {
+            auto node = ResolvePath(path, false);
+            if (!node.Dentry) {
+                return;
+            }
+            return node.Dentry->UnsetValue();
         }
 
         void Mount(const std::string& mountPointPath, TVolume* srcVolume, const std::string& srcDir);
@@ -75,47 +79,104 @@ namespace NJK {
             }
         };
 
-        struct TDentryWithVolume {
-            TVolume* Volume{};
-            TDentry* Dentry{};
-
-            operator TFullInodeId() const {
-                return {Volume, Dentry->InodeId};
-            }
-        };
-
-        TDentryWithVolume ResolvePath(const std::string& path, bool create);
-        TDentryWithVolume ResolveDirs(const std::string_view& path, const TResolveParams&);
-        TVolume::TInode ResolveInVolumePath(TVolume* volume, const std::string& path);
-        TDentry* StepPath(const TDentryWithVolume parent, const std::string& childName, const TResolveParams&);
-        void EnsureInodeData(TDentryWithVolume node);
-
     private:
-        struct TInodeData {
-            std::atomic<size_t> Ready{0};
-            std::shared_mutex Lock;
-            //std::condition_variable CondVar;
-            size_t DentryCount = 0;
-            TInode Inode;
-        };
+        //struct TInodeData {
+        //    std::atomic<size_t> Ready{0};
+        //    std::shared_mutex Lock;
+        //    //std::condition_variable CondVar;
+        //    size_t DentryCount = 0;
+        //    TInode Inode;
+        //};
 
         struct TMount {
             TVolume* Volume{};
-            std::unique_ptr<TDentry> Dentry;
+            TDentry* Dentry{};
+        };
 
-            operator TDentryWithVolume () const {
-                return {Volume, Dentry.get()};
-            }
+        class TChildNameLockGuard {
+        public:
+            TChildNameLockGuard(TDentry* dentry, std::string name);
+            TChildNameLockGuard(TChildNameLockGuard&) = delete;
+            TChildNameLockGuard(TChildNameLockGuard&&) noexcept;
+            ~TChildNameLockGuard();
+
+            TChildNameLockGuard& operator= (const TChildNameLockGuard&) = delete;
+            TChildNameLockGuard& operator= (TChildNameLockGuard&&) noexcept;
+
+            void Swap(TChildNameLockGuard& other) noexcept;
+
+        private:
+            TDentry* Dentry_{};
+            std::string Name_;
         };
 
         struct TDentry {
-            std::atomic<size_t> Ready{0};
-            std::shared_mutex Lock;
-            //std::condition_variable CondVar;
-            std::string InParentName; // for debug: remove or replace by unique ptr?
-            TInode::TId InodeId{};
-            TInodeData* InodeData{};
+            enum class EState {
+                Uninitialized,
+                Exists,
+                NotExists,
+            };
+                
+            TNaiveSpinLock Lock;
+
+            EState State = EState::Uninitialized;
+            TCondVar InitCondVar;
+
+            bool CreateLocked = false;
+            TCondVar CreateCondVar;
+
+            // Serialize concurrent directory structure modification
+            // TODO DirWriteLocked is to slow if we wait each modification to disk write
+            bool DirWriteLocked = false;
+            TCondVar DirWriteUnlockedCondVar;
+
+            // Prevent from Exists to NotExists
+            size_t PreventRemoval = 0;
+            TCondVar PreventRemovalCondVar;
+
+            TVolume* Volume{};
+
+            //TDentry* Parent{};
+            std::string InParentName; // for debug
+
+            std::vector<std::string> ChildrenLocks;
+            TCondVar ChildrenLocksCondVar;
+
+            //TInode::TId InodeId{};
+            std::unique_ptr<TInode> Inode;
+
             std::unique_ptr<std::vector<TMount>> Mounts;
+
+            void WaitInitialized() {
+                Y_TODO("");
+            }
+
+            [[nodiscard]] auto LockGuard() {
+                return MakeGuard(Lock);
+            }
+
+            // returns guard
+            [[nodiscard]] TChildNameLockGuard LockChild(const std::string& name);
+
+            std::unique_ptr<TInode> EnsureChild(const std::string& name) {
+                Y_TODO("");
+            }
+            std::unique_ptr<TInode> LookupChild(const std::string& name) {
+                Y_TODO("");
+            }
+
+            void SetValue(const TValue&, ui32 deadline) {
+                Y_TODO();
+            }
+
+            void UnsetValue() {
+                Y_TODO();
+            }
+
+            TValue GetValue() {
+                Y_TODO();
+                return {};
+            }
         };
 
         struct TDentryCacheKey {
@@ -128,16 +189,11 @@ namespace NJK {
             }
         };
 
-        // 1. DentryCache -- это перемещение только внутри одного TVolume
-        // 2. Нельзя лукапить рутовые dentry через DentryCache
-        // 3. нужно смотреть в один и тот же Dentry или Inode*, когда один и тот же inode маунтится в несколько мест
-        // 4. 
-
         struct TFullInodeIdHash {
             size_t operator() (const TFullInodeId& key) const {
                 auto h0 = std::hash<TVolume*>{}(key.Volume);
                 auto h1 = std::hash<TInode::TId>{}(key.InodeId);
-                return h0 ^ (h1 << 1);
+                return CombineHashes(h0, h1);
             }
         };
 
@@ -145,14 +201,150 @@ namespace NJK {
             size_t operator() (const TDentryCacheKey& key) const {
                 auto h0 = TFullInodeIdHash{}(key.ParentInode);
                 auto h1 = std::hash<std::string>{}(key.ChildName);
-                return h0 ^ (h1 << 1);
+                return CombineHashes(h0, h1);
             }
         };
 
+        using TDentryCache = THashMap<TDentryCacheKey, TDentry, TDentryKeyHash>;
+        using TDentryFromCache = TDentryCache::TValuePtr;
+
+        // TDentry that release some in dtor
+        class TDentryWithGuards {
+        public:
+            explicit TDentryWithGuards(TDentry* ptr)
+                : Ptr_(ptr)
+            {
+            }
+
+            explicit TDentryWithGuards(TDentryFromCache holder)
+                : Ptr_(holder.Ptr())
+                , Holder_(std::move(holder))
+            {
+            }
+
+            TDentryWithGuards() = default;
+
+            TDentryWithGuards(const TDentryWithGuards&) = delete;
+
+            TDentryWithGuards(TDentryWithGuards&& other) noexcept {
+                Swap(other);
+            }
+
+            ~TDentryWithGuards() {
+                if (Ptr_) {
+                    if (PreventRemoval_) {
+                        auto g = Ptr_->LockGuard(); // Y_TODO("May be locked already by same thread")
+                        --Ptr_->PreventRemoval;
+                    }
+                }
+            }
+
+            TDentryWithGuards& operator=(const TDentryWithGuards&) = delete;
+
+            TDentryWithGuards& operator=(TDentryWithGuards&& other) noexcept {
+                TDentryWithGuards tmp(std::move(other));
+                Swap(tmp);
+                return *this;
+            }
+
+            explicit operator bool () const {
+                return (bool)Ptr_;
+            }
+
+            // FIXME
+            void PreventRemoval() {
+                PreventRemoval_ = true;
+            }
+
+            TDentry* operator-> () const {
+                return Ptr_;
+            }
+
+            TDentry& operator* () const {
+                return *Ptr_;
+            }
+
+            void Swap(TDentryWithGuards& other) {
+                std::swap(Ptr_, other.Ptr_);
+                Holder_.Swap(other.Holder_);
+                std::swap(PreventRemoval_, other.PreventRemoval_);
+            }
+
+        private:
+            TDentry* Ptr_ = nullptr;
+            TDentryFromCache Holder_;
+            bool PreventRemoval_ = false;
+        };
+
+        struct TDentryWithVolume {
+            TVolume* Volume{};
+            TDentryWithGuards Dentry{};
+
+            operator TFullInodeId() const {
+                return {Volume, Dentry->Inode->Id};
+            }
+
+            static TDentryWithVolume FromMount(const TMount& mount) {
+                return TDentryWithVolume{mount.Volume, TDentryWithGuards(mount.Dentry)};
+            }
+        };
+
+        TDentryWithGuards Wrap(TDentryCache::TValuePtr dentry) {
+            return TDentryWithGuards{std::move(dentry)};
+        }
+
+        TDentry* EnsureMountedInode(TVolume* srcVolume, const std::string& srcDir);
+        TDentryWithVolume ResolvePath(const std::string& path, bool create);
+        TDentryWithVolume ResolveDirs(const std::string_view& path, const TResolveParams&);
+        TVolume::TInode ResolveInVolumePath(TVolume* volume, const std::string& path);
+        TDentryWithGuards StepPath(const TDentryWithVolume& parent, const std::string& childName, const TResolveParams&);
+        void EnsureInodeData(TDentryWithVolume node);
+
+    private:
         TMount Root_;
-        THashMap<TDentryCacheKey, TDentry, TDentryKeyHash> DentryCache_;
-        THashMap<TFullInodeId, TInodeData, TFullInodeIdHash> InodeCache_;
+        TDentryCache DentryCache_;
+        std::unordered_map<TFullInodeId, TDentry, TFullInodeIdHash> Mounted_;
     };
+
+    [[nodiscard]] TStorage::TImpl::TChildNameLockGuard TStorage::TImpl::TDentry::LockChild(const std::string& name) {
+        auto copy = name;
+        {
+            auto g = LockGuard();
+            while (true) {
+                if (std::none_of(ChildrenLocks.begin(), ChildrenLocks.end(), [&](const std::string& other) { return other == name; })) {
+                    break;
+                }
+                ChildrenLocksCondVar.Wait(Lock);
+            }
+            ChildrenLocks.emplace_back(std::move(copy));
+        }
+        return TChildNameLockGuard(this, name);
+    }
+
+    TStorage::TImpl::TChildNameLockGuard::TChildNameLockGuard(TDentry* dentry, std::string name)
+        : Dentry_(dentry)
+        , Name_(std::move(name))
+    {
+    }
+
+    TStorage::TImpl::TChildNameLockGuard::TChildNameLockGuard(TChildNameLockGuard&& other) noexcept {
+        Swap(other);
+    }
+
+    TStorage::TImpl::TChildNameLockGuard::~TChildNameLockGuard() {
+        if (Dentry_) {
+            auto g = Dentry_->LockGuard();
+            const size_t size0 = Dentry_->ChildrenLocks.size();
+            Y_VERIFY(size0 > 0);
+            std::erase(Dentry_->ChildrenLocks, Name_);
+            Y_VERIFY(Dentry_->ChildrenLocks.size() == size0 - 1);
+        }
+    }
+
+    void TStorage::TImpl::TChildNameLockGuard::Swap(TChildNameLockGuard& other) noexcept {
+        std::swap(Dentry_, other.Dentry_);
+        std::swap(Name_, other.Name_);
+    }
 
     TStorage::TImpl::TDentryWithVolume TStorage::TImpl::ResolvePath(const std::string& path, bool create) {
         if (path.empty()) {
@@ -180,8 +372,6 @@ namespace NJK {
             }
             assert(b != e);
 
-            //static_assert(std::is_same_v<decltype(path.begin()), std::string::iterator>);
-
             keyName = {b.base(), keyEnd};
             dirPath = std::string_view(&*path.begin(), std::distance(path.begin(), b.base()));
         }
@@ -191,14 +381,14 @@ namespace NJK {
             Y_ENSURE(!create)
             return {};
         }
+
         if (dir.Dentry->Mounts) {
-            //for (const auto& mount : *dir.Dentry->Mounts) { // TODO REVERT ORDER
             const auto& mounts = *dir.Dentry->Mounts;
             for (auto it = mounts.rbegin(); it != mounts.rend(); ++it) {
-                const TDentryWithVolume mount = *it;
-                auto* dentry = StepPath(mount, keyName, {.Create = false});
+                const auto mount = TDentryWithVolume::FromMount(*it);
+                auto dentry = StepPath(mount, keyName, {.Create = false});
                 if (dentry) {
-                    return {mount.Volume, dentry};
+                    return {mount.Volume, std::move(dentry)};
                 }
             }
 
@@ -206,81 +396,140 @@ namespace NJK {
                 return {};
             }
 
-            const TDentryWithVolume target = dir.Dentry->Mounts->back();
-            auto* dentry = StepPath(target, keyName, {.Create = true});
+            const auto target = TDentryWithVolume::FromMount(dir.Dentry->Mounts->back());
+            auto dentry = StepPath(target, keyName, {.Create = true});
             if (dentry) {
-                return {target.Volume, dentry};
+                return {target.Volume, std::move(dentry)};
             }
 
             return {};
         }
 
-        auto* dentry = StepPath(dir, keyName, {.Create = create});
+        auto dentry = StepPath(dir, keyName, {.Create = create});
         if (!dentry) {
             return {};
         }
-        return {dir.Volume, dentry};
+        return {dir.Volume, std::move(dentry)};
     }
 
-    void TStorage::TImpl::EnsureInodeData(TDentryWithVolume node) {
-        if (node.Dentry->InodeData) {
-            return;
-        }
-        TInodeData* inodeData = &InodeCache_[node];
-        if (!inodeData->Loaded) {
-            inodeData->Inode = node.Volume->ReadInode(node.Dentry->InodeId);
-            inodeData->Loaded = true;
-        }
-        node.Dentry->InodeData = inodeData;
-    }
+    //void TStorage::TImpl::EnsureInodeData(TDentryWithVolume node) {
+    //    if (node.Dentry->InodeData) {
+    //        return;
+    //    }
+    //    TInodeData* inodeData = &InodeCache_[node];
+    //    if (!inodeData->Loaded) {
+    //        inodeData->Inode = node.Volume->ReadInode(node.Dentry->InodeId);
+    //        inodeData->Loaded = true;
+    //    }
+    //    node.Dentry->InodeData = inodeData;
+    //}
 
-    // TODO Rename
-    TStorage::TImpl::TDentry* TStorage::TImpl::StepPath(const TDentryWithVolume parent, const std::string& childName, const TResolveParams& params) {
-        auto* dentry = parent.Dentry;
-        auto* volume = parent.Volume;
+    /*
+        EVENTS
 
-        const TDentryCacheKey cacheKey{{volume, dentry->InodeId}, childName};
-        if (auto* p = DentryCache_.FindPtr(cacheKey)) {
-            while (!p->Ready.load()) {
-                ; // TODO
-            }
-            return p;
-        }
+        1. x.ModifyValue
+        2. p.ModifyChilds = p.RemoveChild(x) | p.AddChild(x)
+        3. RemoveFromCache(x)
+        4. AddToCache
+        5. FlushCacheItem
+        6. p.LookupChildInode(x)
+        7. p.EnsureChildInode(x)
+        
+        I. x.ModifyValue
+            Race:
+                p.RemoveChild(x)
+                x.ModifyValue
+                RemoveFromCache(x)
+                FlushCacheItem(x)
 
-        EnsureInodeData(parent);
-        TInodeData* childInodeData{};
+        II. x.RemoveChild(c) | x.AddChild(c)
+            Race:
+                p.RemoveChild(x)
+                x.RemoveChild(...)
+                x.AddChild(...)
+                RemoveFromCache(x)
+                RemoveFromCache(c)
+                FlushCacheItem(c)
 
-        Y_TODO("DentryCount");
+        III. AddToCache(c)
 
-        {
-            TInodeData* inodeData = dentry->InodeData;
 
-            TInodeDataOps ops(volume);
-            auto addChildInode = [this, &childInodeData, volume](TInode* inode) {
-                TInodeData& inodeData = InodeCache_[{volume, inode->Id}];
-                inodeData.Loaded = true;
-                inodeData.Inode = std::move(*inode);
-                childInodeData = &inodeData;
-            };
+    */
+
+    TStorage::TImpl::TDentryWithGuards TStorage::TImpl::StepPath(const TDentryWithVolume& parentExt, const std::string& childName, const TResolveParams& params) {
+        using TInodePtr = std::unique_ptr<TInode>;
+
+        auto* volume = parentExt.Volume;
+        auto& parent = parentExt.Dentry;
+
+        // 1. parent ++ref_count to prevent cache removal (inside hashmap impl)
+        // 2. parent can be in NotExists state, so lock this 
+
+        const TDentryCacheKey childCacheKey{{volume, parent->Inode->Id}, childName};
+        auto emplaceResult = DentryCache_.emplace_key(childCacheKey);
+        auto child = Wrap(std::move(emplaceResult.Obj));
+
+        auto childGuard = parent->LockChild(childName);
+
+        if (emplaceResult.Created) {
+            Y_DEFER([&](){
+                child->InitCondVar.NotifyAll();
+            });
+
+            TInodePtr childInode;
             if (params.Create) {
-                auto childInode = ops.EnsureChild(inodeData->Inode, childName);
-                addChildInode(&childInode);
+                childInode = parent->EnsureChild(childName);
             } else {
-                auto childInode = ops.LookupChild(inodeData->Inode, childName);
-                if (!childInode) {
-                    return nullptr;
+                childInode = parent->LookupChild(childName);
+            }
+
+            if (!childInode) {
+                {
+                    auto g = child->LockGuard();
+                    child->State = TDentry::EState::NotExists;
+                    child->InParentName = std::move(childName);
+                    child->Volume = volume;
                 }
-                addChildInode(&*childInode);
+                return {};
+            }
+
+            {
+                auto g = child->LockGuard();
+                child->Inode = std::move(childInode);
+                child->State = TDentry::EState::Exists;
+                child->InParentName = std::move(childName);
+                child->Volume = volume;
+                ++child->PreventRemoval;
+                child.PreventRemoval();
+            }
+            return child;
+        } else {
+            child->WaitInitialized(); // TODO Don't take lock twice
+
+            {
+                auto g = child->LockGuard();
+                while (true) {
+                    if (child->State == TDentry::EState::Exists) {
+                        ++child->PreventRemoval;
+                        child.PreventRemoval();
+                        return child;
+                    } else if (!params.Create) {
+                        return {};
+                    }
+
+                    while (child->CreateLocked) {
+                        child->CreateCondVar.Wait(child->Lock);
+                    }
+                    if (child->State == TDentry::EState::NotExists) {
+                        child->CreateLocked = true;
+                        break;
+                    }
+                }
             }
         }
 
-        auto& childDentry = DentryCache_[cacheKey];
-        childDentry.InParentName = childName; // DEBUG TODO
-        childDentry.InodeId = childInodeData->Inode.Id;
-        childDentry.InodeData = childInodeData;
-        childDentry.Ready.store(1);
-
-        return &childDentry;
+        Y_FAIL("");
+        return {};
     }
 
     TStorage::TImpl::TDentryWithVolume TStorage::TImpl::ResolveDirs(const std::string_view& path, const TResolveParams& params) {
@@ -291,14 +540,12 @@ namespace NJK {
             ++start;
         }
 
-        TDentryWithVolume cur = Root_;
-
-        //TInodeDataOps ops(volume);
+        auto cur = TDentryWithVolume::FromMount(Root_);
 
         while (start != path.end()) {
             // Follow last mount
             if (cur.Dentry->Mounts) {
-                cur = cur.Dentry->Mounts->back();
+                cur = TDentryWithVolume::FromMount(cur.Dentry->Mounts->back());
             }
 
             auto end = start;
@@ -353,25 +600,42 @@ namespace NJK {
         return cur;
     }
 
-    void TStorage::TImpl::Mount(const std::string& mountPointPath, TVolume* srcVolume, const std::string& srcDir) {
-        // XXX It's okay to ignore caches in ResolveInVolumePath if we mount all before user mutating requests
+    TStorage::TImpl::TDentry* TStorage::TImpl::EnsureMountedInode(TVolume* srcVolume, const std::string& srcDir) {
         auto srcInode = ResolveInVolumePath(srcVolume, srcDir);
+        auto& dentry = Mounted_[{srcVolume, srcInode.Id}];
 
+        auto g = dentry.LockGuard();
+        if (dentry.State == TDentry::EState::Uninitialized) {
+            std::stringstream s;
+            s << (void*)srcVolume << srcVolume->GetFsDir() << '@' << srcDir;
+            dentry.InParentName = s.str();
+            dentry.Volume = srcVolume;
+            // TODO Better
+            dentry.Inode.reset(new TInode());
+            *dentry.Inode = std::move(srcInode);
+            dentry.State = TDentry::EState::Exists;
+        }
+
+        return &dentry;
+    }
+
+    void TStorage::TImpl::Mount(const std::string& mountPointPath, TVolume* srcVolume, const std::string& srcDir) {
         auto mountPoint = ResolveDirs(mountPointPath, {.Create = true});
         if (!mountPoint.Dentry->Mounts) {
             mountPoint.Dentry->Mounts.reset(new std::vector<TMount>());
         }
         auto& mount = mountPoint.Dentry->Mounts->emplace_back();
         mount.Volume = srcVolume;
-        mount.Dentry = std::make_unique<TDentry>();
-        mount.Dentry->InParentName = "this is mount"; // TODO More info
-        mount.Dentry->InodeId = srcInode.Id;
-
-        // TODO FIXME Update InodeCache here
+        mount.Dentry = EnsureMountedInode(srcVolume, srcDir);
     }
 
     TStorage::TStorage(TVolume* rootVolume, const std::string& rootDir)
         : Impl_(new TImpl(rootVolume, rootDir))
+    {
+    }
+
+    TStorage::TStorage(TStorage&& other) noexcept
+        : Impl_(std::move(other.Impl_))
     {
     }
 

@@ -2,7 +2,8 @@
 
 #include "direct_io.h"
 #include "fixed_buffer.h"
-#include <unordered_map>
+#include "hash_map.h"
+//#include <unordered_map>
 
 #include <atomic>
 #include <mutex>
@@ -80,7 +81,8 @@ namespace NJK {
             size_t RefCount = 0;
             bool DataLoaded = false;
             bool Dirty = false;
-            bool InModify = false;
+            ui32 InModify = 0;
+            bool Flushing = false;
         };
 
     public:
@@ -95,11 +97,12 @@ namespace NJK {
 
             ~TPage() {
                 std::lock_guard g(Page_->Lock);
-                --Page_->RefCount;
                 if (Mutable) {
-                    Page_->InModify = false;
-                    Page_->CondVar.notify_all();
+                    if (--Page_->InModify == 0) {
+                        Page_->CondVar.notify_all();
+                    }
                 }
+                --Page_->RefCount;
             }
 
             std::conditional_t<Mutable, TFixedBuffer&, const TFixedBuffer&> Buf() const {
@@ -141,11 +144,11 @@ namespace NJK {
                 page->DataLoaded = true;
             }
             if (modify) {
-                while (page->InModify) {
+                while (page->Flushing) {
                     page->CondVar.wait(guard);
                 }
                 page->Dirty = true;
-                page->InModify = true;
+                ++page->InModify; // we want simultaneously modify different inodes in same block
             }
             return page;
         }
@@ -167,6 +170,8 @@ namespace NJK {
 
         std::mutex Lock_;
         std::unordered_map<ui32, TRawBlock> Cache_;
+        // TODO
+        //THashMap<ui32, TRawBlock> Cache_;
     };
 
     class TCachedBlockFileRegion {

@@ -95,6 +95,10 @@ namespace NJK {
             return SuperBlock_;
         }
 
+        const std::string& GetFsDir() const {
+            return Directory_;
+        }
+
         static TSuperBlock CalcSuperBlock(const TSettings& settings);
 
         // Super Block (1 block)
@@ -317,5 +321,8 @@ namespace NJK {
 
     TVolume::~TVolume() = default;
 
+    const std::string& TVolume::GetFsDir() const {
+        return Impl_->GetFsDir();
+    }
 
 }
