@@ -3,6 +3,11 @@
 #include "common.h"
 
 #include <atomic>
+#include <linux/futex.h>
+#include <sys/time.h>
+#include <unistd.h>
+#include <sys/syscall.h>
+#include <climits>
 
 namespace NJK {
 
@@ -74,17 +79,45 @@ namespace NJK {
     class TCondVar {
     public:
         template <typename T>
-        void Wait(T&) {
-            Y_TODO("");
-        }
-
-        void NotifyAll() {
-            Y_TODO("");
+        void Wait(T& lock) {
+            auto iter = Iter_.load();
+            lock.unlock();
+            ++Waiting_;
+            FutexWait(iter);
+            --Waiting_;
+            lock.lock();
         }
 
         void NotifyOne() {
-            Y_TODO("");
+            ++Iter_;
+            if (Waiting_.load()) {
+                FutexWake(1);
+            }
         }
+
+        void NotifyAll() {
+            ++Iter_;
+            if (Waiting_.load()) {
+                FutexWake(INT_MAX);
+            }
+        }
+    private:
+        int* Word() {
+            static_assert(sizeof(int) == sizeof(Iter_));
+            return reinterpret_cast<int*>(&Iter_);
+        }
+
+        void FutexWait(int val) {
+            syscall(SYS_futex, Word(), FUTEX_WAIT, val, nullptr, nullptr, 0);
+        }
+
+        void FutexWake(int count) {
+            syscall(SYS_futex, Word(), FUTEX_WAKE, count, nullptr, nullptr, 0);
+        }
+
+    private:
+        std::atomic<int> Iter_;
+        std::atomic<size_t> Waiting_;
     };
 
 }

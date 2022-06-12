@@ -534,7 +534,7 @@ leva = ui32 40
 )");
 
         {
-            auto storage = TStorage::Build(&homeV1);
+            auto storage = TStorage::Build(&homeV2);
             storage.Set("/trofimenkov/.vimrc", std::string{"set hls"});
             storage.Set("/trofimenkov", (ui32)35);
             storage.Set("/lazy", std::string{"new-lazy-attr"});

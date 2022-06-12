@@ -160,12 +160,15 @@ namespace NJK {
 
             std::unique_ptr<std::vector<TMount>> Mounts;
 
-            void WaitInitialized() {
-                Y_TODO("");
-            }
-
             [[nodiscard]] auto LockGuard() {
                 return MakeGuard(Lock);
+            }
+
+            void WaitInitialized() {
+                auto g = LockGuard();
+                while (State == EState::Uninitialized) {
+                    InitCondVar.Wait(Lock);
+                }
             }
 
             // returns guard
@@ -617,35 +620,37 @@ namespace NJK {
         auto childGuard = parent->LockChild(childName);
 
         if (emplaceResult.Created) {
-            Y_DEFER([&](){
-                child->InitCondVar.NotifyAll();
-            });
+            {
+                Y_DEFER([&](){
+                    child->InitCondVar.NotifyAll();
+                });
 
-            TInodePtr childInode;
-            if (params.Create) {
-                childInode = parent->EnsureChild(childName, childGuard);
-            } else {
-                childInode = parent->LookupChild(childName, childGuard);
-            }
+                TInodePtr childInode;
+                if (params.Create) {
+                    childInode = parent->EnsureChild(childName, childGuard);
+                } else {
+                    childInode = parent->LookupChild(childName, childGuard);
+                }
 
-            if (!childInode) {
+                if (!childInode) {
+                    {
+                        auto g = child->LockGuard();
+                        child->State = TDentry::EState::NotExists;
+                        child->InParentName = std::move(childName);
+                        child->Volume = volume;
+                    }
+                    return {};
+                }
+
                 {
                     auto g = child->LockGuard();
-                    child->State = TDentry::EState::NotExists;
+                    child->Inode = std::move(childInode);
+                    child->State = TDentry::EState::Exists;
                     child->InParentName = std::move(childName);
                     child->Volume = volume;
+                    ++child->PreventRemoval;
+                    child.PreventRemoval();
                 }
-                return {};
-            }
-
-            {
-                auto g = child->LockGuard();
-                child->Inode = std::move(childInode);
-                child->State = TDentry::EState::Exists;
-                child->InParentName = std::move(childName);
-                child->Volume = volume;
-                ++child->PreventRemoval;
-                child.PreventRemoval();
             }
             return child;
         } else {
@@ -670,9 +675,20 @@ namespace NJK {
                         break;
                     }
                 }
-
-                Y_TODO("");
             }
+
+            TInodePtr childInode = parent->EnsureChild(childName, childGuard);
+            {
+                auto g = child->LockGuard();
+                child->Inode = std::move(childInode);
+                child->State = TDentry::EState::Exists;
+                ++child->PreventRemoval;
+                child.PreventRemoval();
+                child->CreateLocked = false;
+            }
+            child->CreateCondVar.NotifyAll(); // FIXME
+
+            return child;
         }
 
         Y_UNREACHABLE;
