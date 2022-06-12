@@ -13,6 +13,7 @@
 #include <condition_variable>
 #include <filesystem>
 #include <unordered_map>
+#include <thread>
 
 using NJK::NVolume::TInodeDataOps;
 using NJK::NVolume::TInodeValue;
@@ -757,23 +758,8 @@ home = string "new-root-home"
     }
 }
 
-int main() {
+void TestHashMap() {
     using namespace NJK;
-
-    TestDefaultSuperBlockCalc();
-    TestSuperBlockSerialization();
-
-    CheckOnDiskSize<TVolume::TSuperBlock>();
-    CheckOnDiskSize<TVolume::TInode>();
-    CheckOnDiskSize<NVolume::TBlockGroupDescr>();
-
-    TestInodeAllocation();
-    TestDataBlockAllocation();
-    TestInodeDataOps();
-
-    TestStorage0();
-    TestStorage1();
-    TestStorageNonRoot();
 
     std::cerr << '\n';
 
@@ -793,6 +779,133 @@ int main() {
         std::cerr << "load_factor: " << my.load_factor() << '\n';
         std::cerr << "size: " << my.size() << '\n';
     }
+}
+
+void TestHashMapConcurrency() {
+    using namespace NJK;
+
+    THashMap<size_t, std::atomic<size_t>> my;
+
+    std::thread t0([&]() {
+        size_t sum = 0;
+        for (size_t i = 0; i < 1000000; ++i) {
+            sum += my[10]->load(std::memory_order::relaxed);
+            //std::cerr << 'r';
+        }
+    });
+    std::thread t1([&]() {
+        for (size_t i = 0; i < 1000000; ++i) {
+            my[10]->store(20, std::memory_order::relaxed);
+            //std::cerr << 'w';
+        }
+    });
+    t0.join();
+    t1.join();
+}
+
+void TestConcurrency() {
+    using namespace NJK;
+
+    VOLUME_PATH(root);
+
+    VOLUME(root);
+    auto s = TStorage::Build(&root);
+
+    const std::string key{"/home/trofimenkov/.vimrc"};
+    s.Set(key, (ui32)10);
+
+    std::thread r0([&]() {
+        for (size_t i = 0; i < 200000; ++i) {
+            auto val = s.Get(key);
+            (void)val;
+            //std::cerr << std::get<ui32>(val) << ' ';
+            //std::cerr << 'r';
+        }
+    });
+    std::thread r1([&]() {
+        for (size_t i = 0; i < 200000; ++i) {
+            auto val = s.Get(key);
+            (void)val;
+            //std::cerr << std::get<ui32>(val) << ' ';
+            //std::cerr << 'R';
+        }
+    });
+    std::thread w0([&]() {
+        for (size_t i = 0; i < 200000; ++i) {
+            s.Set(key, (ui32)i);
+            //std::cerr << 'w';
+        }
+    });
+    std::thread w1([&]() {
+        for (size_t i = 0; i < 200000; ++i) {
+            s.Set(key, (ui32)i);
+            //std::cerr << 'W';
+        }
+    });
+
+    r0.join();
+    r1.join();
+    w0.join();
+    w1.join();
+}
+
+void TestConcurrencyIncrement() {
+    using namespace NJK;
+
+    VOLUME_PATH(root);
+
+    VOLUME(root);
+    auto s = TStorage::Build(&root);
+
+    const std::string key{"/home/trofimenkov/.vimrc"};
+    s.Set(key, (ui32)0);
+
+    std::thread inc0([&]() {
+        for (size_t i = 0; i < 100000; ++i) {
+            s.Set(key, (ui32)(std::get<ui32>(s.Get(key)) + 1));
+        }
+        std::cerr << std::get<ui32>(s.Get(key)) << '\n';
+    });
+    std::thread inc1([&]() {
+        for (size_t i = 0; i < 100000; ++i) {
+            s.Set(key, (ui32)(std::get<ui32>(s.Get(key)) + 1));
+        }
+        std::cerr << std::get<ui32>(s.Get(key)) << '\n';
+    });
+    std::thread inc2([&]() {
+        for (size_t i = 0; i < 100000; ++i) {
+            s.Set(key, (ui32)(std::get<ui32>(s.Get(key)) + 1));
+        }
+        std::cerr << std::get<ui32>(s.Get(key)) << '\n';
+    });
+
+    inc0.join();
+    inc1.join();
+    inc2.join();
+}
+
+int main() {
+    using namespace NJK;
+
+    TestDefaultSuperBlockCalc();
+    TestSuperBlockSerialization();
+
+    CheckOnDiskSize<TVolume::TSuperBlock>();
+    CheckOnDiskSize<TVolume::TInode>();
+    CheckOnDiskSize<NVolume::TBlockGroupDescr>();
+
+    TestInodeAllocation();
+    TestDataBlockAllocation();
+    TestInodeDataOps();
+
+    TestStorage0();
+    TestStorage1();
+    TestStorageNonRoot();
+
+    TestHashMap();
+    TestHashMapConcurrency();
+    //TestConcurrency();
+    TestConcurrencyIncrement();
 
     return 0;
 }

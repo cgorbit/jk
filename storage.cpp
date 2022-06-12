@@ -173,6 +173,7 @@ namespace NJK {
 
             // returns guard
             [[nodiscard]] TChildNameLockGuard LockChild(const std::string& name);
+            void UnlockChild(const std::string& name);
 
             std::unique_ptr<TInode> EnsureChild(const std::string& name, const TChildNameLockGuard& g) {
                 Y_ENSURE(g.Name() == name && g.Dentry() == this);
@@ -469,6 +470,17 @@ namespace NJK {
         return TChildNameLockGuard(this, name);
     }
 
+    void TStorage::TImpl::TDentry::UnlockChild(const std::string& name) {
+        {
+            auto g = LockGuard();
+            const size_t size0 = ChildrenLocks.size();
+            Y_VERIFY(size0 > 0);
+            std::erase(ChildrenLocks, name);
+            Y_VERIFY(ChildrenLocks.size() == size0 - 1);
+        }
+        ChildrenLocksCondVar.NotifyAll(); // FIXME One
+}
+
     TStorage::TImpl::TChildNameLockGuard::TChildNameLockGuard(TDentry* dentry, std::string name)
         : Dentry_(dentry)
         , Name_(std::move(name))
@@ -481,11 +493,7 @@ namespace NJK {
 
     TStorage::TImpl::TChildNameLockGuard::~TChildNameLockGuard() {
         if (Dentry_) {
-            auto g = Dentry_->LockGuard();
-            const size_t size0 = Dentry_->ChildrenLocks.size();
-            Y_VERIFY(size0 > 0);
-            std::erase(Dentry_->ChildrenLocks, Name_);
-            Y_VERIFY(Dentry_->ChildrenLocks.size() == size0 - 1);
+            Dentry_->UnlockChild(Name_);
         }
     }
 

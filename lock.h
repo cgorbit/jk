@@ -35,6 +35,7 @@ namespace NJK {
         TLockGuard(T& lock)
             : Lock_(&lock)
         {
+            Lock_->lock();
         }
 
         TLockGuard(const TLockGuard&) = delete;
