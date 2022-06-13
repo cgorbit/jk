@@ -65,6 +65,7 @@ namespace NJK {
     #define Y_UNREACHABLE Y_VERIFY(false)
 
     #define TODO_BETTER_CONCURRENCY
+    #define TODO_PERFORMANCE
     #define TODO(msg)
     #define FIXME(msg)
 

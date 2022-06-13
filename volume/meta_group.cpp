@@ -181,6 +181,8 @@ namespace NJK::NVolume {
 
     void TMetaGroup::DeallocateDataBlock(ui32 id) {
         GetDataBlockGroup(id).DeallocateDataBlock(id);
+        ++ExistingFreeDataBlockCount_;
+        ++TotalFreeDataBlockCount_;
     }
 
     TInode TMetaGroup::ReadInode(ui32 id) {

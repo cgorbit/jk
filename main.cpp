@@ -5,6 +5,9 @@
 #include "storage.h"
 #include "fixed_buffer.h"
 #include "hash_map.h"
+#include "bitset.h"
+
+#include "/home/trofimenkov/benchmark/include/benchmark/benchmark.h"
 
 #include <cassert>
 #include <iostream>
@@ -787,23 +790,25 @@ void TestHashMapConcurrency() {
     THashMap<size_t, std::atomic<size_t>> my;
 
     std::thread t0([&]() {
-        size_t sum = 0;
         for (size_t i = 0; i < 1000000; ++i) {
-            sum += my[10]->load(std::memory_order::relaxed);
-            //std::cerr << 'r';
+            my[10]->fetch_add(1, std::memory_order::relaxed);
+            my[77]->fetch_add(1, std::memory_order::relaxed);
         }
     });
     std::thread t1([&]() {
         for (size_t i = 0; i < 1000000; ++i) {
-            my[10]->store(20, std::memory_order::relaxed);
-            //std::cerr << 'w';
+            my[10]->fetch_add(1, std::memory_order::relaxed);
+            my[77]->fetch_add(1, std::memory_order::relaxed);
         }
     });
     t0.join();
     t1.join();
+
+    assert(my[10]->load(std::memory_order::relaxed) == 2000000);
+    assert(my[77]->load(std::memory_order::relaxed) == 2000000);
 }
 
-void TestConcurrency() {
+void TestConcurrencyStress() {
     using namespace NJK;
 
     VOLUME_PATH(root);
@@ -853,39 +858,217 @@ void TestConcurrencyIncrement() {
     using namespace NJK;
 
     VOLUME_PATH(root);
+    VOLUME_PATH(home);
 
     VOLUME(root);
-    auto s = TStorage::Build(&root);
+    VOLUME(home);
+    auto s = TStorageBuilder(&root)
+        //.Mount("/home", &home)
+        .Build();
 
-    const std::string key{"/home/trofimenkov/.vimrc"};
-    s.Set(key, (ui32)0);
-
-    std::thread inc0([&]() {
-        for (size_t i = 0; i < 100000; ++i) {
-            s.Set(key, (ui32)(std::get<ui32>(s.Get(key)) + 1));
+    std::vector<std::string> keys;
+    for (size_t i = 0; i < 10; ++i) {
+        for (size_t j = 0; j < 10; ++j) {
+            std::stringstream key;
+            key << "/home/login_" << i << "/file_" << j;
+            keys.push_back(key.str());
         }
-        std::cerr << std::get<ui32>(s.Get(key)) << '\n';
+    }
+
+    auto load = [&keys, &s](const ui32 div) {
+        std::vector<ui32> prevs;
+        prevs.resize(keys.size());
+
+        for (size_t i = 0; i < 10000; ++i) {
+            for (size_t keyIdx = 0; keyIdx < keys.size(); ++keyIdx) {
+                const auto& key = keys[keyIdx];
+                if (i % div == 0) {
+                    s.Erase(key);
+                } else {
+                    auto& prev = prevs[keyIdx];
+                    auto val = s.Get(key);
+                    if (auto* cur = std::get_if<ui32>(&val)) {
+                        prev = *cur;
+                    }
+                    s.Set(key, (ui32)(prev + 1));
+                    ++prev;
+                }
+            }
+            if (i % 1000 == 0) {
+                std::cerr << 'X';
+            }
+        }
+    };
+
+    std::thread inc0([&load]() {
+        load(3);
     });
+
     std::thread inc1([&]() {
-        for (size_t i = 0; i < 100000; ++i) {
-            s.Set(key, (ui32)(std::get<ui32>(s.Get(key)) + 1));
-        }
-        std::cerr << std::get<ui32>(s.Get(key)) << '\n';
+        load(7);
     });
+
     std::thread inc2([&]() {
-        for (size_t i = 0; i < 100000; ++i) {
-            s.Set(key, (ui32)(std::get<ui32>(s.Get(key)) + 1));
-        }
-        std::cerr << std::get<ui32>(s.Get(key)) << '\n';
+        load(5);
     });
 
     inc0.join();
     inc1.join();
     inc2.join();
+
+    for (const auto& key : keys) {
+        std::cerr << "key [" << key << "]: ";
+        auto val = s.Get(key);
+        if (auto* cur = std::get_if<ui32>(&val)) {
+            std::cerr << *cur;
+        } else {
+            std::cerr << "Null";
+        }
+        std::cerr << '\n';
+    }
 }
 
-int main() {
+int RunBenchmarks(int argc, char** argv) {
+    ::benchmark::Initialize(&argc, argv);
+    if (::benchmark::ReportUnrecognizedArguments(argc, argv)) return 1;
+    ::benchmark::RunSpecifiedBenchmarks();
+    ::benchmark::Shutdown();
+    return 0;
+}
+
+static void BM_StringCreation(benchmark::State& state) {
+  for (auto _ : state)
+    std::string empty_string;
+}
+// Register the function as a benchmark
+BENCHMARK(BM_StringCreation);
+
+static void BM_StringCopy(benchmark::State& state) {
+  std::string x = "hello";
+  for (auto _ : state)
+    std::string copy(x);
+}
+BENCHMARK(BM_StringCopy);
+
+void TestBlockBitSet() {
     using namespace NJK;
+
+    TBlockBitSet s(TFixedBuffer::Aligned(4096));
+
+    assert(s.FindUnset() == 0);
+    assert(s.Test(0) == false);
+
+    s.Set(0);
+    assert(s.FindUnset() == 1);
+    assert(s.Test(0) == true);
+    assert(s.Test(1) == false);
+    assert(s.Test(2) == false);
+
+    s.Set(1);
+    assert(s.FindUnset() == 2);
+    assert(s.Test(0) == true);
+    assert(s.Test(1) == true);
+    assert(s.Test(2) == false);
+}
+
+#if 0
+void TestBlockBitSetStress() {
+    using namespace NJK;
+
+    NVolume::TBlockGroup::TAllocatableItems items{
+        .FreeCount = 4096 * 8,
+        .Bitmap{TFixedBuffer::Aligned(4096)}
+    };
+    items.Bitmap.Buf().FillZeroes();
+
+    std::thread t0([&]() {
+        for (size_t i = 0; i < 1000000; ++i) {
+            i32 idx0 = items.TryAllocate();
+            Y_VERIFY(idx0 != -1);
+            i32 idx1 = items.TryAllocate();
+            Y_VERIFY(idx1 != -1);
+            i32 idx2 = items.TryAllocate();
+            Y_VERIFY(idx2 != -1);
+            i32 idx3 = items.TryAllocate();
+            Y_VERIFY(idx3 != -1);
+            i32 idx4 = items.TryAllocate();
+            Y_VERIFY(idx4 != -1);
+            i32 idx5 = items.TryAllocate();
+            Y_VERIFY(idx5 != -1);
+            i32 idx6 = items.TryAllocate();
+            Y_VERIFY(idx6 != -1);
+            i32 idx7 = items.TryAllocate();
+            Y_VERIFY(idx7 != -1);
+            i32 idx8 = items.TryAllocate();
+            Y_VERIFY(idx8 != -1);
+            i32 idx9 = items.TryAllocate();
+            Y_VERIFY(idx9 != -1);
+
+            items.Deallocate(idx0);
+            items.Deallocate(idx9);
+            items.Deallocate(idx8);
+            items.Deallocate(idx3);
+            items.Deallocate(idx4);
+            items.Deallocate(idx6);
+            items.Deallocate(idx7);
+            items.Deallocate(idx5);
+            items.Deallocate(idx1);
+            items.Deallocate(idx2);
+        }
+    });
+
+    std::thread t1([&]() {
+        for (size_t i = 0; i < 1000000; ++i) {
+            i32 idx0 = items.TryAllocate();
+            Y_VERIFY(idx0 != -1);
+            i32 idx1 = items.TryAllocate();
+            Y_VERIFY(idx1 != -1);
+            i32 idx2 = items.TryAllocate();
+            Y_VERIFY(idx2 != -1);
+            i32 idx3 = items.TryAllocate();
+            Y_VERIFY(idx3 != -1);
+            i32 idx4 = items.TryAllocate();
+            Y_VERIFY(idx4 != -1);
+            i32 idx5 = items.TryAllocate();
+            Y_VERIFY(idx5 != -1);
+            i32 idx6 = items.TryAllocate();
+            Y_VERIFY(idx6 != -1);
+            i32 idx7 = items.TryAllocate();
+            Y_VERIFY(idx7 != -1);
+            i32 idx8 = items.TryAllocate();
+            Y_VERIFY(idx8 != -1);
+            i32 idx9 = items.TryAllocate();
+            Y_VERIFY(idx9 != -1);
+
+            items.Deallocate(idx0);
+            items.Deallocate(idx5);
+            items.Deallocate(idx1);
+            items.Deallocate(idx4);
+            items.Deallocate(idx2);
+            items.Deallocate(idx8);
+            items.Deallocate(idx6);
+            items.Deallocate(idx7);
+            items.Deallocate(idx3);
+            items.Deallocate(idx9);
+        }
+    });
+
+    t0.join();
+    t1.join();
+
+    std::cerr << items.GetFreeCount() << '\n';
+}
+#endif
+
+int main(int argc, char** argv) {
+    using namespace NJK;
+
+    TestConcurrencyIncrement();
+    return 0;
+
+    //TestBlockBitSet();
+    //TestBlockBitSetStress();
+    //return 0;
 
     TestDefaultSuperBlockCalc();
     TestSuperBlockSerialization();
@@ -902,10 +1085,14 @@ int main() {
     TestStorage1();
     TestStorageNonRoot();
 
-    TestHashMap();
+    //TestHashMap();
     TestHashMapConcurrency();
-    //TestConcurrency();
+
+    TestConcurrencyStress();
+
     TestConcurrencyIncrement();
+
+    return RunBenchmarks(argc, argv);
 
     return 0;
 }

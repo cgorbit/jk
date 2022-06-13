@@ -34,7 +34,7 @@ namespace NJK {
 
         TFixedBuffer(const TFixedBuffer&) = delete;
 
-        TFixedBuffer(TFixedBuffer&& other) {
+        TFixedBuffer(TFixedBuffer&& other) noexcept {
             //std::cerr << "MOVE CTOR\n";
             Swap(other);
         }
@@ -48,7 +48,7 @@ namespace NJK {
 
         TFixedBuffer& operator= (const TFixedBuffer&) = delete;
 
-        TFixedBuffer& operator= (TFixedBuffer&& other) {
+        TFixedBuffer& operator= (TFixedBuffer&& other) noexcept {
             //std::cerr << "MOVE ASSIGN\n";
             TFixedBuffer tmp(std::move(other));
             Swap(tmp);
@@ -89,7 +89,7 @@ namespace NJK {
             return (const char*)Data_;
         }
 
-        void Swap(TFixedBuffer& other) {
+        void Swap(TFixedBuffer& other) noexcept {
             std::swap(Size_, other.Size_);
             std::swap(Data_, other.Data_);
         }

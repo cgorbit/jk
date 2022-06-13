@@ -2,6 +2,8 @@
 
 namespace NJK {
 
+    TODO("This is for little-endian only")
+
     i32 TBlockBitSet::FindUnset() const {
         // TODO Buf must be aligned to machine word
         const size_t* buf = reinterpret_cast<const size_t*>(Buf_.Data());
@@ -13,7 +15,7 @@ namespace NJK {
                     if ((v & 0xff) != 0xff) {
                         for (size_t k = 0; k < 8; ++k) {
                             if ((v & 1) == 0) {
-                                return i * sizeof(size_t) + j * 8 + k;
+                                return i * sizeof(size_t) * 8 + j * 8 + k;
                             }
                             v >>= 1;
                         }

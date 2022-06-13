@@ -18,7 +18,7 @@ namespace NJK::NVolume {
         // TODO FIXME Don't use Zero Id for Inodes and for Data Blocks -- start from One
 
         if (parent.Dir.HasChildren) {
-            Y_ENSURE(parent.Dir.BlockCount != 0);
+            Y_VERIFY(parent.Dir.BlockCount != 0);
             auto block = Volume_.GetMutableDataBlock(parent.Dir.FirstBlockId);
             auto children = DeserializeDirectoryEntries(block.Buf());
 
@@ -33,6 +33,7 @@ namespace NJK::NVolume {
             return child;
         } else {
             auto child = Volume_.AllocateInode();
+TODO("Allocate with owner inode argument")
             auto blockId = Volume_.AllocateDataBlock();
             auto block = Volume_.GetMutableDataBlock(blockId);
             SerializeDirectoryEntries(block.Buf(), {{child.Id, name}});
@@ -46,8 +47,8 @@ namespace NJK::NVolume {
     }
 
     void TInodeDataOps::RemoveChild(TInode& parent, const std::string& name) {
-        Y_ENSURE(parent.Dir.HasChildren);
-        Y_ENSURE(parent.Dir.BlockCount != 0);
+        Y_VERIFY(parent.Dir.HasChildren);
+        Y_VERIFY(parent.Dir.BlockCount != 0);
 
         auto block = Volume_.GetMutableDataBlock(parent.Dir.FirstBlockId);
         auto children = DeserializeDirectoryEntries(block.Buf());
@@ -61,7 +62,7 @@ namespace NJK::NVolume {
         auto child = Volume_.ReadInode(childDentry.Id);
 
         // XXX
-        Y_ENSURE(!child.Dir.HasChildren);
+        Y_VERIFY(!child.Dir.HasChildren);
 
         if (child.Val.Type != TInode::EType::Undefined) {
             Y_FAIL("TODO Remove value data blocks");
@@ -86,7 +87,7 @@ namespace NJK::NVolume {
             return {};
         }
 
-        Y_ENSURE(parent.Dir.BlockCount != 0);
+        Y_VERIFY(parent.Dir.BlockCount != 0);
 
         auto block = Volume_.GetDataBlock(parent.Dir.FirstBlockId);
         return DeserializeDirectoryEntries(block.Buf());
@@ -96,7 +97,7 @@ namespace NJK::NVolume {
         if (!parent.Dir.HasChildren) {
             return {};
         }
-        Y_ENSURE(parent.Dir.BlockCount != 0);
+        Y_VERIFY(parent.Dir.BlockCount != 0);
 
         auto block = Volume_.GetDataBlock(parent.Dir.FirstBlockId);
         auto children = DeserializeDirectoryEntries(block.Buf()); // TODO We can lookup without full deserialization
@@ -126,6 +127,7 @@ namespace NJK::NVolume {
             return;
         }
 
+TODO("Allocate with owner inode argument")
         const auto blockId = inode.Val.BlockCount
             ?  inode.Val.FirstBlockId
             :  Volume_.AllocateDataBlock();
@@ -161,10 +163,10 @@ namespace NJK::NVolume {
 
     TInodeDataOps::TValue TInodeDataOps::GetValue(const TInode& inode) {
         if (inode.Val.Type == TInode::EType::Undefined) {
-            Y_ENSURE(!inode.Val.BlockCount);
+            Y_VERIFY(!inode.Val.BlockCount);
             return {};
         }
-        Y_ENSURE(inode.Val.BlockCount);
+        Y_VERIFY(inode.Val.BlockCount);
 
         auto block = Volume_.GetDataBlock(inode.Val.FirstBlockId);
 
@@ -215,25 +217,26 @@ namespace NJK::NVolume {
 
     void TInodeDataOps::UnsetValue(TInode& inode) {
         if (inode.Val.Type == TInode::EType::Undefined) {
-            Y_ENSURE(!inode.Val.BlockCount);
-            Y_ENSURE(inode.Val.FirstBlockId == 0);
+            Y_VERIFY(!inode.Val.BlockCount);
+            Y_VERIFY(inode.Val.FirstBlockId == 0);
             return;
         }
-        Y_ENSURE(inode.Val.BlockCount);
+        Y_VERIFY(inode.Val.BlockCount);
 
         Volume_.DeallocateDataBlock(inode.Val.FirstBlockId);
 
         inode.Val.Type = TInode::EType::Undefined;
         inode.Val.BlockCount = 0;
         inode.Val.FirstBlockId = 0;
-        Volume_.WriteInode(inode); // TODO Until we have cache
+
+        Volume_.WriteInode(inode);
     }
 
     std::vector<TInodeDataOps::TDirEntry> TInodeDataOps::DeserializeDirectoryEntries(const TFixedBuffer& buf) {
         TBufInput in(buf);
         ui16 count = 0;
         Deserialize(in, count);
-        Y_ENSURE(count > 0);
+        Y_VERIFY(count > 0);
         std::vector<TDirEntry> ret;
         ret.resize(count);
         for (size_t i = 0; i < count; ++i) {
@@ -250,7 +253,7 @@ namespace NJK::NVolume {
     void TInodeDataOps::SerializeDirectoryEntries(TFixedBuffer& buf, const std::vector<TDirEntry>& entries) {
         TBufOutput out(buf);
         ui16 count = entries.size();
-        Y_ENSURE(count > 0);
+        Y_VERIFY(count > 0);
         Serialize(out, count);
         std::vector<TDirEntry> ret;
         for (const auto& entry : entries) {

@@ -34,9 +34,6 @@ namespace NJK {
             (void)deadline; // TODO
             auto node = ResolvePath(path, true);
             Y_VERIFY(node.Dentry);
-            //EnsureInodeData(node);
-            //TInodeDataOps ops(node.Volume);
-            //ops.SetValue(node.Dentry->InodeData->Inode, value);
             node.Dentry->SetValue(value, deadline);
         }
 
@@ -45,9 +42,6 @@ namespace NJK {
             if (!node.Dentry) {
                 return {};
             }
-            //EnsureInodeData(node);
-            //TInodeDataOps ops(node.Volume);
-            //return ops.GetValue(node.Dentry->InodeData->Inode);
             return node.Dentry->GetValue();
         }
 
@@ -191,6 +185,9 @@ namespace NJK {
                     Y_DEFER([this] {
                         UnlockDirForWrite();
                     });
+
+TODO_BETTER_CONCURRENCY
+                    auto g = LockGuard();
                     TInodeDataOps ops(Volume);
                     ret = ops.EnsureChild(*Inode, name);
                 }
@@ -205,12 +202,17 @@ namespace NJK {
                     UnlockDirForRead();
                 });
 
-                TInodeDataOps ops(Volume);
-                auto inode = ops.LookupChild(*Inode, name);
-                if (!inode) {
-                    return {};
+                std::optional<TInode> ret;
+                {
+TODO_BETTER_CONCURRENCY
+                    auto g = LockGuard();
+                    TInodeDataOps ops(Volume);
+                    ret = ops.LookupChild(*Inode, name);
+                    if (!ret) {
+                        return {};
+                    }
                 }
-                return std::make_unique<TInode>(std::move(*inode));
+                return std::make_unique<TInode>(std::move(*ret));
             }
 
             /////////////////////////////////////////////////////////////////
@@ -303,6 +305,8 @@ namespace NJK {
                     UnlockValueForWrite();
                 });
 
+TODO_BETTER_CONCURRENCY
+                auto g = LockGuard();
                 TInodeDataOps ops(Volume);
                 ops.SetValue(*Inode, value, deadline);
             }
@@ -313,6 +317,8 @@ namespace NJK {
                     UnlockValueForWrite();
                 });
 
+TODO_BETTER_CONCURRENCY
+                auto g = LockGuard();
                 TInodeDataOps ops(Volume);
                 ops.UnsetValue(*Inode);
             }
@@ -323,6 +329,8 @@ namespace NJK {
                     UnlockValueForRead();
                 });
 
+TODO_BETTER_CONCURRENCY
+                auto g = LockGuard();
                 TInodeDataOps ops(Volume);
                 return ops.GetValue(*Inode);
             }
@@ -625,9 +633,8 @@ namespace NJK {
         auto emplaceResult = DentryCache_.emplace_key(childCacheKey);
         auto child = Wrap(std::move(emplaceResult.Obj));
 
-        auto childGuard = parent->LockChild(childName);
-
         if (emplaceResult.Created) {
+            auto childGuard = parent->LockChild(childName);
             {
                 Y_DEFER([&](){
                     child->InitCondVar.NotifyAll();
@@ -663,6 +670,8 @@ namespace NJK {
             return child;
         } else {
             child->WaitInitialized(); // TODO Don't take lock twice
+
+            auto childGuard = parent->LockChild(childName);
 
             {
                 auto g = child->LockGuard();
@@ -822,6 +831,10 @@ namespace NJK {
 
     TStorage::TValue TStorage::Get(const std::string& path) {
         return Impl_->Get(path);
+    }
+
+    void TStorage::Erase(const std::string& path) {
+        Impl_->Erase(path);
     }
 
 }

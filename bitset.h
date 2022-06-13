@@ -27,21 +27,21 @@ namespace NJK {
         //}
 
         //void Allocate() {
-        //    Page_ = new std::byte[ByteSize];
+        //    Page_ = new uint8_t[ByteSize];
         //}
 
         bool Test(size_t pos) const {
-            const auto& b = reinterpret_cast<const std::byte&>(Buf_.Data()[pos / 8]);
-            return static_cast<bool>(b & static_cast<std::byte>(1 << (pos % 8))) != 0;
+            const auto& b = reinterpret_cast<const uint8_t&>(Buf_.Data()[pos / 8]);
+            return static_cast<bool>(b & static_cast<uint8_t>(1 << (pos % 8))) != 0;
         }
 
         void Set(size_t pos, bool value = true) {
             //Y_TODO("atomic");
-            auto& b = reinterpret_cast<std::byte&>(Buf_.MutableData()[pos / 8]);
+            auto& b = reinterpret_cast<uint8_t&>(Buf_.MutableData()[pos / 8]);
             if (value) {
-                b |= static_cast<std::byte>(1 << (pos % 8));
+                b |= static_cast<uint8_t>(1 << (pos % 8));
             } else {
-                b &= static_cast<std::byte>(0b11111111 ^ (1 << (pos % 8)));
+                b &= static_cast<uint8_t>(0b11111111 ^ (1 << (pos % 8)));
             }
         }
 

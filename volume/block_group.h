@@ -99,6 +99,18 @@ namespace NJK::NVolume {
             ui32 GetFreeCount();
             i32 TryAllocate();
             void Deallocate(ui32);
+
+            void Clear() {
+                std::unique_lock g(Lock_);
+                Bitmap.Buf().FillZeroes();
+            }
+
+            void CopyFrom(const TFixedBuffer& src) {
+                std::unique_lock g(Lock_);
+                src.CopyTo(Bitmap.Buf());
+            }
+
+            //std::vector<bool> Debug;
         };
         
         TAllocatableItems Inodes;

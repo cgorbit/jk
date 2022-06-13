@@ -30,13 +30,10 @@ namespace NJK::NVolume {
             .Bitmap{NewBuffer()}
         }
     {
-        Inodes.Bitmap.Buf().FillZeroes();
-        DataBlocks.Bitmap.Buf().FillZeroes();
-
         Y_ENSURE(SuperBlock->BlockGroupInodeCount == SuperBlock->BlockGroupDataBlockCount);
 
-        File_.GetBlock(InodesBitmapBlockIndex).Buf().CopyTo(Inodes.Bitmap.Buf());
-        File_.GetBlock(DataBlocksBitmapBlockIndex).Buf().CopyTo(DataBlocks.Bitmap.Buf());
+        Inodes.CopyFrom(File_.GetBlock(InodesBitmapBlockIndex).Buf());
+        DataBlocks.CopyFrom(File_.GetBlock(DataBlocksBitmapBlockIndex).Buf());
     }
 
     TBlockGroup::~TBlockGroup() {
@@ -55,15 +52,18 @@ namespace NJK::NVolume {
         std::unique_lock g(Lock_);
 
         if (!FreeCount) {
-            return {};
+            return -1;
         }
         --FreeCount;
 
         const i32 idx = Bitmap.FindUnset();
+        Y_VERIFY(idx != -1); // For now (we use mutual exclusion) this is impossible
         if (idx == -1) {
             return -1;
         }
+        Y_ASSERT(!Bitmap.Test(idx));
         Bitmap.Set(idx);
+        Y_ASSERT(Bitmap.Test(idx));
 
         return idx;
     }
@@ -73,6 +73,7 @@ namespace NJK::NVolume {
         ++FreeCount;
         Y_ASSERT(Bitmap.Test(idx));
         Bitmap.Unset(idx);
+        Y_ASSERT(!Bitmap.Test(idx));
     }
 
     std::optional<TInode> TBlockGroup::TryAllocateInode() {
@@ -87,7 +88,6 @@ namespace NJK::NVolume {
 
         TInode inode;
         inode.Id = idx + InodeIndexOffset;
-
         WriteInode(inode); // FIXME Don't write?
 
         return inode;
@@ -96,7 +96,6 @@ namespace NJK::NVolume {
     void TBlockGroup::DeallocateInode(const TInode& inode) {
         auto idx = inode.Id - InodeIndexOffset;
         Inodes.Deallocate(idx);
-        // FIXME No inode on disk modification here
     }
 
     TInode TBlockGroup::ReadInode(ui32 id) {
@@ -137,13 +136,8 @@ namespace NJK::NVolume {
             return {};
         }
 
-        //TDataBlock block{.Buf = NewBuffer()};
-        //block.Id = idx + DataBlockIndexOffset;
-        //block.Buf.FillZeroes();
-
-        //WriteDataBlock(block); // TODO Until we have cache
-
-        return idx;
+        const ui32 id = idx + DataBlockIndexOffset;
+        return id;
     }
 
     void TBlockGroup::DeallocateDataBlock(ui32 id) {
