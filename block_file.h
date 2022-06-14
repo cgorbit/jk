@@ -75,34 +75,39 @@ namespace NJK {
 
     private:
         struct TRawBlock {
-            std::mutex Lock;
-            std::condition_variable CondVar;
+            TNaiveSpinLock Lock;
+            TCondVar CondVar;
             TFixedBuffer Buf = TFixedBuffer::Empty();
-            size_t RefCount = 0;
             bool DataLoaded = false;
             bool Dirty = false;
             ui32 InModify = 0;
             bool Flushing = false;
         };
 
+        using TCache = THashMap<ui32, TRawBlock>;
+        using TRawBlockPtr = TCache::TValuePtr;
+
     public:
 
         template <bool Mutable>
         class TPage {
         public:
-            TPage(TRawBlock* page)
-                : Page_(page)
+            TPage(TRawBlockPtr page)
+                : Page_(std::move(page))
             {
             }
 
             ~TPage() {
-                std::lock_guard g(Page_->Lock);
+                auto g = MakeGuard(Page_->Lock);
                 if (Mutable) {
                     if (--Page_->InModify == 0) {
-                        Page_->CondVar.notify_all();
+                        Page_->CondVar.NotifyAll();
                     }
                 }
-                --Page_->RefCount;
+            }
+
+            TPage(TPage&& other) noexcept {
+                Page_.Swap(other.Page_);
             }
 
             std::conditional_t<Mutable, TFixedBuffer&, const TFixedBuffer&> Buf() const {
@@ -110,42 +115,37 @@ namespace NJK {
             }
 
         private:
-            TRawBlock* Page_{};
+            TRawBlockPtr Page_{};
         };
 
         TPage<false> GetBlock(size_t blockIdx) {
             TPage<false> ret{GetBlockImpl(blockIdx, false)};
-            //std::cerr << "+ GetBlock(" << blockIdx << ") => " << (void*)ret.Buf().Data() << '\n';
             return ret;
         }
 
         TPage<true> GetMutableBlock(size_t blockIdx) {
             TPage<true> ret{GetBlockImpl(blockIdx, true)};
-            //std::cerr << "+ GetMutableBlock(" << blockIdx << ") => " << (void*)ret.Buf().Data() << '\n';
             return ret;
         }
 
     private:
-        TRawBlock* GetBlockImpl(size_t blockIdx, bool modify) {
-            TRawBlock* page{};
+        TRawBlockPtr GetBlockImpl(size_t blockIdx, bool modify) {
+            TRawBlockPtr page{};
             {
-                std::lock_guard g(Lock_);
-                page = &Cache_[blockIdx];
+                page = Cache_[blockIdx];
             }
 
-            std::unique_lock guard(page->Lock);
+            auto guard = MakeGuard(page->Lock);
             if (page->Buf.Size() == 0) {
                 page->Buf = TFixedBuffer::Aligned(File_.GetBlockSize()); // TODO BETTER
-                //std::cerr << "++ Allocated Page: " << (void*)page->Buf.Data() << "\n";
             }
-            ++page->RefCount;
             if (!page->DataLoaded) {
                 File_.ReadBlock(page->Buf, blockIdx);
                 page->DataLoaded = true;
             }
             if (modify) {
                 while (page->Flushing) {
-                    page->CondVar.wait(guard);
+                    page->CondVar.Wait(page->Lock);
                 }
                 page->Dirty = true;
                 ++page->InModify; // we want simultaneously modify different inodes in same block
@@ -154,24 +154,17 @@ namespace NJK {
         }
 
         void Flush() {
-            for (auto& [blockIdx, block] : Cache_) {
+            Cache_.Iterate([this](ui32 blockIdx, TRawBlock& block) {
                 if (block.Dirty) {
-                    //std::cerr << "+ write dirty block " << blockIdx << '\n';
                     File_.WriteBlock(block.Buf, blockIdx);
                     block.Dirty = false;
-                } else {
-                    //std::cerr << "+ skip clean block " << blockIdx << '\n';
                 }
-            }
+            });
         }
 
     private:
         TBlockDirectIoFile& File_;
-
-        std::mutex Lock_;
-        std::unordered_map<ui32, TRawBlock> Cache_;
-        // TODO
-        //THashMap<ui32, TRawBlock> Cache_;
+        THashMap<ui32, TRawBlock> Cache_;
     };
 
     class TCachedBlockFileRegion {
