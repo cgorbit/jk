@@ -7,7 +7,7 @@
 #include "hash_map.h"
 #include "bitset.h"
 
-#include "/home/trofimenkov/benchmark/include/benchmark/benchmark.h"
+//#include <benchmark/benchmark.h>
 
 #include <cassert>
 #include <iostream>
@@ -935,6 +935,7 @@ void TestConcurrencyIncrement() {
     inc2.join();
 }
 
+#if 0
 int RunBenchmarks(int argc, char** argv) {
     ::benchmark::Initialize(&argc, argv);
     if (::benchmark::ReportUnrecognizedArguments(argc, argv)) return 1;
@@ -942,20 +943,7 @@ int RunBenchmarks(int argc, char** argv) {
     ::benchmark::Shutdown();
     return 0;
 }
-
-static void BM_StringCreation(benchmark::State& state) {
-  for (auto _ : state)
-    std::string empty_string;
-}
-// Register the function as a benchmark
-BENCHMARK(BM_StringCreation);
-
-static void BM_StringCopy(benchmark::State& state) {
-  std::string x = "hello";
-  for (auto _ : state)
-    std::string copy(x);
-}
-BENCHMARK(BM_StringCopy);
+#endif
 
 void TestBlockBitSet() {
     using namespace NJK;
@@ -977,95 +965,6 @@ void TestBlockBitSet() {
     assert(s.Test(1) == true);
     assert(s.Test(2) == false);
 }
-
-#if 0
-void TestBlockBitSetStress() {
-    using namespace NJK;
-
-    NVolume::TBlockGroup::TAllocatableItems items{
-        .FreeCount = 4096 * 8,
-        .Bitmap{TFixedBuffer::Aligned(4096)}
-    };
-    items.Bitmap.Buf().FillZeroes();
-
-    std::thread t0([&]() {
-        for (size_t i = 0; i < 1000000; ++i) {
-            i32 idx0 = items.TryAllocate();
-            Y_VERIFY(idx0 != -1);
-            i32 idx1 = items.TryAllocate();
-            Y_VERIFY(idx1 != -1);
-            i32 idx2 = items.TryAllocate();
-            Y_VERIFY(idx2 != -1);
-            i32 idx3 = items.TryAllocate();
-            Y_VERIFY(idx3 != -1);
-            i32 idx4 = items.TryAllocate();
-            Y_VERIFY(idx4 != -1);
-            i32 idx5 = items.TryAllocate();
-            Y_VERIFY(idx5 != -1);
-            i32 idx6 = items.TryAllocate();
-            Y_VERIFY(idx6 != -1);
-            i32 idx7 = items.TryAllocate();
-            Y_VERIFY(idx7 != -1);
-            i32 idx8 = items.TryAllocate();
-            Y_VERIFY(idx8 != -1);
-            i32 idx9 = items.TryAllocate();
-            Y_VERIFY(idx9 != -1);
-
-            items.Deallocate(idx0);
-            items.Deallocate(idx9);
-            items.Deallocate(idx8);
-            items.Deallocate(idx3);
-            items.Deallocate(idx4);
-            items.Deallocate(idx6);
-            items.Deallocate(idx7);
-            items.Deallocate(idx5);
-            items.Deallocate(idx1);
-            items.Deallocate(idx2);
-        }
-    });
-
-    std::thread t1([&]() {
-        for (size_t i = 0; i < 1000000; ++i) {
-            i32 idx0 = items.TryAllocate();
-            Y_VERIFY(idx0 != -1);
-            i32 idx1 = items.TryAllocate();
-            Y_VERIFY(idx1 != -1);
-            i32 idx2 = items.TryAllocate();
-            Y_VERIFY(idx2 != -1);
-            i32 idx3 = items.TryAllocate();
-            Y_VERIFY(idx3 != -1);
-            i32 idx4 = items.TryAllocate();
-            Y_VERIFY(idx4 != -1);
-            i32 idx5 = items.TryAllocate();
-            Y_VERIFY(idx5 != -1);
-            i32 idx6 = items.TryAllocate();
-            Y_VERIFY(idx6 != -1);
-            i32 idx7 = items.TryAllocate();
-            Y_VERIFY(idx7 != -1);
-            i32 idx8 = items.TryAllocate();
-            Y_VERIFY(idx8 != -1);
-            i32 idx9 = items.TryAllocate();
-            Y_VERIFY(idx9 != -1);
-
-            items.Deallocate(idx0);
-            items.Deallocate(idx5);
-            items.Deallocate(idx1);
-            items.Deallocate(idx4);
-            items.Deallocate(idx2);
-            items.Deallocate(idx8);
-            items.Deallocate(idx6);
-            items.Deallocate(idx7);
-            items.Deallocate(idx3);
-            items.Deallocate(idx9);
-        }
-    });
-
-    t0.join();
-    t1.join();
-
-    std::cerr << items.GetFreeCount() << '\n';
-}
-#endif
 
 int main(int argc, char** argv) {
     using namespace NJK;
@@ -1101,10 +1000,6 @@ int main(int argc, char** argv) {
     return 0;
 
     // return RunBenchmarks(argc, argv);
-
-    //TestBlockBitSet();
-    //TestBlockBitSetStress();
-    //return 0;
 
     return 0;
 }
