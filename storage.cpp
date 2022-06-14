@@ -257,7 +257,7 @@ namespace NJK {
             /////////////////////////////////////////////////////////////////
 
             void Flush() {
-TODO_BETTER_CONCURRENCY
+                TODO_BETTER_CONCURRENCY
                 auto g = LockGuard();
                 if (LocalValue) {
                     TInodeDataOps ops(Volume);
@@ -271,7 +271,7 @@ TODO_BETTER_CONCURRENCY
                     UnlockValueForWrite();
                 });
 
-TODO_BETTER_CONCURRENCY
+                TODO_BETTER_CONCURRENCY
                 auto g = LockGuard();
                 if (auto* str = std::get_if<std::string>(&value); str && str->size() > MaxLocalValueSize) {
                     TInodeDataOps ops(Volume);
@@ -288,7 +288,7 @@ TODO_BETTER_CONCURRENCY
                     UnlockValueForWrite();
                 });
 
-TODO_BETTER_CONCURRENCY
+                TODO_BETTER_CONCURRENCY
                 auto g = LockGuard();
                 LocalValue = TValue{};
                 LocalDeadline = 0;
@@ -300,7 +300,7 @@ TODO_BETTER_CONCURRENCY
                     UnlockValueForRead();
                 });
 
-TODO_BETTER_CONCURRENCY
+                TODO_BETTER_CONCURRENCY
                 auto g = LockGuard();
                 if (LocalValue) {
                     return *LocalValue;
@@ -483,7 +483,7 @@ TODO_BETTER_CONCURRENCY
                 UnlockDirForWrite();
             });
 
-TODO_BETTER_CONCURRENCY
+            TODO_BETTER_CONCURRENCY
             auto g = LockGuard();
             TInodeDataOps ops(Volume);
             ret = ops.EnsureChild(*Inode, name);
@@ -502,7 +502,7 @@ TODO_BETTER_CONCURRENCY
 
         std::optional<TInode> ret;
         {
-TODO_BETTER_CONCURRENCY
+            TODO_BETTER_CONCURRENCY
             auto g = LockGuard();
             TInodeDataOps ops(Volume);
             ret = ops.LookupChild(*Inode, name);
