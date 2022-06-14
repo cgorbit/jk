@@ -110,74 +110,9 @@ namespace NJK {
         }
 
     private:
-        TLookupResult Lookup(const TKey& key, bool create) {
-            const auto hash = Hash_(key);
-            float loadFactor = 0;
-            bool created = false;
+        TLookupResult Lookup(const TKey& key, bool create);
 
-            TKeyValue* kv = nullptr;
-            {
-                std::shared_lock g(ResizeLock_);
-                auto& bucket = Buckets_[hash % Buckets_.size()];
-
-                auto g1 = MakeGuard(*bucket.Lock);
-
-                for (auto& item : bucket.Chain) {
-                    if (item.Key == key) {
-                        kv = &item;
-                        break;
-                    } 
-                }
-
-                if (!kv && create) {
-                    kv = &bucket.Chain.emplace_front(key);
-                    ++Size_;
-                    loadFactor = Size_.load() * 1.0 / Buckets_.size();
-                    created = true;
-                }
-
-                if (kv) {
-                    ++kv->RefCount;
-                }
-            }
-
-            if (!kv && !create) {
-                return TLookupResult{TValuePtr{}, false};
-            }
-
-            if (loadFactor > MaxLoadFactor_) {
-                std::unique_lock g(ResizeLock_);
-                loadFactor = Size_.load() * 1.0 / Buckets_.size();
-                if (loadFactor > MaxLoadFactor_) {
-                    Resize(HashTablePrimes[++CapacityIdx_]);
-                }
-            }
-
-            return {TValuePtr{kv}, created};
-        }
-
-    private:
-        void Resize(size_t size) {
-            std::vector<TBucket> newBuckets;
-            newBuckets.resize(size);
-
-            for (auto& oldBucket : Buckets_) {
-                auto& oldChain = oldBucket.Chain;
-                for (auto it = oldChain.begin(); it != oldChain.end();) {
-                    auto next = it;
-                    ++next;
-                    const auto hash = Hash_(it->Key);
-                    auto& newBucket = newBuckets[hash % newBuckets.size()];
-                    newBucket.Chain.splice(newBucket.Chain.begin(), oldChain, it);
-                    it = next;
-                }
-            }
-            for (auto& bucket : newBuckets) {
-                bucket.Lock.reset(new TLock());
-            }
-
-            Buckets_.swap(newBuckets);
-        }
+        void Resize(size_t size);
 
     private:
         struct TKeyValue {
@@ -213,5 +148,75 @@ namespace NJK {
         Hash Hash_{};
         size_t CapacityIdx_ = 0;
     };
+
+    template <typename K, typename T, typename Hash, typename L>
+    typename THashMap<K, T, Hash, L>::TLookupResult THashMap<K, T, Hash, L>::Lookup(const TKey& key, bool create) {
+        const auto hash = Hash_(key);
+        float loadFactor = 0;
+        bool created = false;
+
+        TKeyValue* kv = nullptr;
+        {
+            std::shared_lock g(ResizeLock_);
+            auto& bucket = Buckets_[hash % Buckets_.size()];
+
+            auto g1 = MakeGuard(*bucket.Lock);
+
+            for (auto& item : bucket.Chain) {
+                if (item.Key == key) {
+                    kv = &item;
+                    break;
+                } 
+            }
+
+            if (!kv && create) {
+                kv = &bucket.Chain.emplace_front(key);
+                ++Size_;
+                loadFactor = Size_.load() * 1.0 / Buckets_.size();
+                created = true;
+            }
+
+            if (kv) {
+                ++kv->RefCount;
+            }
+        }
+
+        if (!kv && !create) {
+            return TLookupResult{TValuePtr{}, false};
+        }
+
+        if (loadFactor > MaxLoadFactor_) {
+            std::unique_lock g(ResizeLock_);
+            loadFactor = Size_.load() * 1.0 / Buckets_.size();
+            if (loadFactor > MaxLoadFactor_) {
+                Resize(HashTablePrimes[++CapacityIdx_]);
+            }
+        }
+
+        return {TValuePtr{kv}, created};
+    }
+
+    template <typename K, typename T, typename Hash, typename L>
+    void THashMap<K, T, Hash, L>::Resize(size_t size) {
+        std::vector<TBucket> newBuckets;
+        newBuckets.resize(size);
+
+        for (auto& oldBucket : Buckets_) {
+            auto& oldChain = oldBucket.Chain;
+            for (auto it = oldChain.begin(); it != oldChain.end();) {
+                auto next = it;
+                ++next;
+                const auto hash = Hash_(it->Key);
+                auto& newBucket = newBuckets[hash % newBuckets.size()];
+                newBucket.Chain.splice(newBucket.Chain.begin(), oldChain, it);
+                it = next;
+            }
+        }
+        for (auto& bucket : newBuckets) {
+            bucket.Lock.reset(new TLock());
+        }
+
+        Buckets_.swap(newBuckets);
+    }
 
 }
