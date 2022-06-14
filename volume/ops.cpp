@@ -127,7 +127,8 @@ TODO("Allocate with owner inode argument")
             return;
         }
 
-TODO("Allocate with owner inode argument")
+        TODO("Allocate with owner inode argument")
+
         const auto blockId = inode.Val.BlockCount
             ?  inode.Val.FirstBlockId
             :  Volume_.AllocateDataBlock();
@@ -141,7 +142,7 @@ TODO("Allocate with owner inode argument")
             inode.Val.BlockCount = 1;
             inode.Val.FirstBlockId = blockId;
         }
-        Volume_.WriteInode(inode); // TODO Until we have cache
+        Volume_.WriteInode(inode);
 
         TBufOutput out(block.Buf());
         if (const auto* v = std::get_if<ui32>(&value)) {
@@ -153,9 +154,15 @@ TODO("Allocate with owner inode argument")
         } else if (const auto* v = std::get_if<bool>(&value)) {
             Serialize(out, *v);
         } else if (const auto* v = std::get_if<std::string>(&value)) {
-            ui16 len = v->size();
+            const ui16 len = v->size();
+            Y_ENSURE(len <= Volume_.GetSuperBlock().BlockSize - sizeof(len));
             Serialize(out, len);
             out.Save(v->data(), len);
+        } else if (const auto* v = std::get_if<TBlobView>(&value)) {
+            const ui16 len = v->Size();
+            Y_ENSURE(len <= Volume_.GetSuperBlock().BlockSize - sizeof(len));
+            Serialize(out, len);
+            out.Save(v->Data(), len);
         } else {
             Y_FAIL("TODO TInodeDataOps::SetValue");
         }
@@ -269,6 +276,12 @@ TODO("Allocate with owner inode argument")
         DoDumpTree(out, root, 0, dumpInodeId);
     }
 
+    std::string TInodeDataOps::DumpTree(bool dumpInodeId) {
+        std::stringstream out;
+        DumpTree(out, dumpInodeId);
+        return out.str();
+    }
+
     void TInodeDataOps::DoDumpTree(std::ostream& out, const TInode& root, size_t offset, bool dumpInodeId) {
         auto children = ListChildren(root);
         std::sort(children.begin(), children.end(), [] (const auto& lhs, const auto& rhs) {
@@ -306,7 +319,7 @@ TODO("Allocate with owner inode argument")
                 } else if (auto* p = std::get_if<std::string>(&value)) {
                     out << "string \"" << *p << "\"";
                 } else if (auto* p = std::get_if<TBlobView>(&value)) {
-                    out << "blob \"" << std::string(p->Ptr, p->Size) << "\"";
+                    out << "blob \"" << std::string(p->Data(), p->Size()) << "\"";
                 }
             }
             out << '\n';

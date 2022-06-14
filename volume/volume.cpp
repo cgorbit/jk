@@ -239,7 +239,6 @@ namespace NJK {
 
             while (true) {
                 const size_t alive = AliveMetaGroupCount_.load();
-                //for (size_t i = 0; i < alive; ++i)
                 {
                     i32 id = MetaGroups_[alive - 1]->TryAllocateDataBlock();
                     if (id != -1) {

@@ -5,24 +5,36 @@
 
 namespace NJK::NVolume {
 
-    struct TBlobView {
+    class TBlobView {
+    public:
+        TODO("Not fully supported")
+
         TBlobView() {
         }
 
         TBlobView(const std::string& s)
-            : Ptr(s.data())
-            , Size(s.size())
+            : Ptr_(s.data())
+            , Size_(s.size())
         {
         }
 
         TBlobView(const char* ptr, size_t size)
-            : Ptr(ptr)
-            , Size(size)
+            : Ptr_(ptr)
+            , Size_(size)
         {
         }
 
-        const char* Ptr{};
-        size_t Size = 0;
+        size_t Size() const {
+            return Size_;
+        }
+
+        const char* Data() const {
+            return Ptr_;
+        }
+
+    private:
+        const char* Ptr_{};
+        size_t Size_ = 0;
     };
 
     using TInodeValue = std::variant<

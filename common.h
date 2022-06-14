@@ -88,4 +88,6 @@ namespace NJK {
     }
 
     #define Y_DEFER(f) const NPrivate::TDeferCall CONCAT(defer, __LINE__)(f)
+
+    #define Y_NO_INLINE __attribute__((noinline))
 }

@@ -808,7 +808,7 @@ void TestHashMapConcurrency() {
     assert(my[77]->load(std::memory_order::relaxed) == 2000000);
 }
 
-void TestConcurrencyStress() {
+void TestConcurrencySeparateSettersGetters() {
     using namespace NJK;
 
     VOLUME_PATH(root);
@@ -876,21 +876,30 @@ void TestConcurrencyIncrement() {
     }
 
     auto load = [&keys, &s](const ui32 div) {
+        size_t getCount = 0;
+        size_t setCount = 0;
+        size_t eraseCount = 0;
+
         std::vector<ui32> prevs;
         prevs.resize(keys.size());
+
+        auto start = std::chrono::system_clock::now();
 
         for (size_t i = 0; i < 10000; ++i) {
             for (size_t keyIdx = 0; keyIdx < keys.size(); ++keyIdx) {
                 const auto& key = keys[keyIdx];
                 if (i % div == 0) {
                     s.Erase(key);
+                    ++eraseCount;
                 } else {
                     auto& prev = prevs[keyIdx];
                     auto val = s.Get(key);
+                    ++getCount;
                     if (auto* cur = std::get_if<ui32>(&val)) {
                         prev = *cur;
                     }
                     s.Set(key, (ui32)(prev + 1));
+                    ++setCount;
                     ++prev;
                 }
             }
@@ -898,6 +907,15 @@ void TestConcurrencyIncrement() {
                 std::cerr << 'X';
             }
         }
+
+        auto finish = std::chrono::system_clock::now();
+        const std::chrono::duration<double> elapsed_seconds = finish - start;
+        std::cerr << "getCount: " << getCount
+            << ", setCount: " << setCount
+            << ", eraseCount: " << eraseCount
+            << ", " << elapsed_seconds.count()
+            << ", " << (elapsed_seconds.count() / (getCount + setCount + eraseCount))
+            << '\n';
     };
 
     std::thread inc0([&load]() {
@@ -915,17 +933,6 @@ void TestConcurrencyIncrement() {
     inc0.join();
     inc1.join();
     inc2.join();
-
-    for (const auto& key : keys) {
-        std::cerr << "key [" << key << "]: ";
-        auto val = s.Get(key);
-        if (auto* cur = std::get_if<ui32>(&val)) {
-            std::cerr << *cur;
-        } else {
-            std::cerr << "Null";
-        }
-        std::cerr << '\n';
-    }
 }
 
 int RunBenchmarks(int argc, char** argv) {
@@ -1063,36 +1070,41 @@ void TestBlockBitSetStress() {
 int main(int argc, char** argv) {
     using namespace NJK;
 
-    TestConcurrencyIncrement();
+    Y_ENSURE(argc == 2);
+    const std::string mode(argv[1]);
+
+    if (mode == "tests") {
+        TestDefaultSuperBlockCalc();
+        TestSuperBlockSerialization();
+
+        CheckOnDiskSize<TVolume::TSuperBlock>();
+        CheckOnDiskSize<TVolume::TInode>();
+        CheckOnDiskSize<NVolume::TBlockGroupDescr>();
+
+        TestInodeAllocation();
+        TestDataBlockAllocation();
+        TestInodeDataOps();
+
+        TestStorage0();
+        TestStorage1();
+        TestStorageNonRoot();
+    } else if (mode == "increment") {
+        TestConcurrencyIncrement();
+    } else if (mode == "hashmap") {
+        //TestHashMap();
+        TestHashMapConcurrency();
+    } else if (mode == "setters_getters") {
+        TestConcurrencySeparateSettersGetters();
+    } else {
+        Y_FAIL("");
+    } 
     return 0;
+
+    // return RunBenchmarks(argc, argv);
 
     //TestBlockBitSet();
     //TestBlockBitSetStress();
     //return 0;
-
-    TestDefaultSuperBlockCalc();
-    TestSuperBlockSerialization();
-
-    CheckOnDiskSize<TVolume::TSuperBlock>();
-    CheckOnDiskSize<TVolume::TInode>();
-    CheckOnDiskSize<NVolume::TBlockGroupDescr>();
-
-    TestInodeAllocation();
-    TestDataBlockAllocation();
-    TestInodeDataOps();
-
-    TestStorage0();
-    TestStorage1();
-    TestStorageNonRoot();
-
-    //TestHashMap();
-    TestHashMapConcurrency();
-
-    TestConcurrencyStress();
-
-    TestConcurrencyIncrement();
-
-    return RunBenchmarks(argc, argv);
 
     return 0;
 }

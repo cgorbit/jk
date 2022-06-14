@@ -60,8 +60,6 @@ namespace NJK::NVolume {
         std::atomic<size_t> TotalFreeDataBlockCount_ = 0;
         std::atomic<size_t> ExistingFreeDataBlockCount_ = 0;
 
-        //ui32 DirectoryCount = 0; // debug
-
         TODO_BETTER_CONCURRENCY
 
         std::mutex Lock_; // guard BlockGroups allocation

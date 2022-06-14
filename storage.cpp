@@ -19,12 +19,12 @@ T CombineHashes(T l, T r) {
 
 namespace NJK {
 
+    using TInode = TVolume::TInode;
+
     using NVolume::TInodeDataOps;
 
     class TStorage::TImpl {
     public:
-        using TInode = TVolume::TInode;
-
         TImpl(TVolume* rootVolume, const std::string& rootDir) {
             Root_.Volume = rootVolume;
             Root_.Dentry = EnsureMountedInode(rootVolume, rootDir);
@@ -154,66 +154,16 @@ namespace NJK {
 
             std::unique_ptr<std::vector<TMount>> Mounts;
 
-            [[nodiscard]] auto LockGuard() {
-                return MakeGuard(Lock);
-            }
+            [[nodiscard]] TLockGuard<TNaiveSpinLock> LockGuard();
 
-            void WaitInitialized() {
-                auto g = LockGuard();
-                while (State == EState::Uninitialized) {
-                    InitCondVar.Wait(Lock);
-                }
-            }
+            void WaitInitialized();
 
             // returns guard
             [[nodiscard]] TChildNameLockGuard LockChild(const std::string& name);
             void UnlockChild(const std::string& name);
 
-            std::unique_ptr<TInode> EnsureChild(const std::string& name, const TChildNameLockGuard& g) {
-                Y_ENSURE(g.Name() == name && g.Dentry() == this);
-
-                auto inode = LookupChild(name, g);
-                if (inode) {
-                    return inode;
-                }
-
-                TInode ret;
-                {
-                    TODO("Write Data into new Data Block and then Swap fast")
-
-                    LockDirForWrite();
-                    Y_DEFER([this] {
-                        UnlockDirForWrite();
-                    });
-
-TODO_BETTER_CONCURRENCY
-                    auto g = LockGuard();
-                    TInodeDataOps ops(Volume);
-                    ret = ops.EnsureChild(*Inode, name);
-                }
-                return std::make_unique<TInode>(std::move(ret));
-            }
-
-            std::unique_ptr<TInode> LookupChild(const std::string& name, const TChildNameLockGuard& g) {
-                Y_ENSURE(g.Name() == name && g.Dentry() == this);
-                
-                LockDirForRead();
-                Y_DEFER([this] {
-                    UnlockDirForRead();
-                });
-
-                std::optional<TInode> ret;
-                {
-TODO_BETTER_CONCURRENCY
-                    auto g = LockGuard();
-                    TInodeDataOps ops(Volume);
-                    ret = ops.LookupChild(*Inode, name);
-                    if (!ret) {
-                        return {};
-                    }
-                }
-                return std::make_unique<TInode>(std::move(*ret));
-            }
+            std::unique_ptr<TInode> EnsureChild(const std::string& name, const TChildNameLockGuard& g);
+            std::unique_ptr<TInode> LookupChild(const std::string& name, const TChildNameLockGuard& g);
 
             /////////////////////////////////////////////////////////////////
             TODO("1. Combine Dir and Value in TInode.Data")
@@ -463,7 +413,23 @@ TODO_BETTER_CONCURRENCY
         std::unordered_map<TFullInodeId, TDentry, TFullInodeIdHash> Mounted_;
     };
 
-    [[nodiscard]] TStorage::TImpl::TChildNameLockGuard TStorage::TImpl::TDentry::LockChild(const std::string& name) {
+    [[nodiscard]]
+    Y_NO_INLINE
+    TLockGuard<TNaiveSpinLock> TStorage::TImpl::TDentry::LockGuard() {
+        return MakeGuard(Lock);
+    }
+
+    Y_NO_INLINE
+    void TStorage::TImpl::TDentry::WaitInitialized() {
+        auto g = LockGuard();
+        while (State == EState::Uninitialized) {
+            InitCondVar.Wait(Lock);
+        }
+    }
+
+    [[nodiscard]]
+    Y_NO_INLINE
+    TStorage::TImpl::TChildNameLockGuard TStorage::TImpl::TDentry::LockChild(const std::string& name) {
         auto copy = name;
         {
             auto g = LockGuard();
@@ -478,6 +444,7 @@ TODO_BETTER_CONCURRENCY
         return TChildNameLockGuard(this, name);
     }
 
+    Y_NO_INLINE
     void TStorage::TImpl::TDentry::UnlockChild(const std::string& name) {
         {
             auto g = LockGuard();
@@ -487,7 +454,55 @@ TODO_BETTER_CONCURRENCY
             Y_VERIFY(ChildrenLocks.size() == size0 - 1);
         }
         ChildrenLocksCondVar.NotifyAll(); // FIXME One
-}
+    }
+
+    Y_NO_INLINE
+    std::unique_ptr<TInode> TStorage::TImpl::TDentry::EnsureChild(const std::string& name, const TChildNameLockGuard& g) {
+        Y_ENSURE(g.Name() == name && g.Dentry() == this);
+
+        auto inode = LookupChild(name, g);
+        if (inode) {
+            return inode;
+        }
+
+        TInode ret;
+        {
+            TODO("Write Data into new Data Block and then Swap fast")
+
+            LockDirForWrite();
+            Y_DEFER([this] {
+                UnlockDirForWrite();
+            });
+
+TODO_BETTER_CONCURRENCY
+            auto g = LockGuard();
+            TInodeDataOps ops(Volume);
+            ret = ops.EnsureChild(*Inode, name);
+        }
+        return std::make_unique<TInode>(std::move(ret));
+    }
+
+    Y_NO_INLINE
+    std::unique_ptr<TInode> TStorage::TImpl::TDentry::LookupChild(const std::string& name, const TChildNameLockGuard& g) {
+        Y_ENSURE(g.Name() == name && g.Dentry() == this);
+        
+        LockDirForRead();
+        Y_DEFER([this] {
+            UnlockDirForRead();
+        });
+
+        std::optional<TInode> ret;
+        {
+TODO_BETTER_CONCURRENCY
+            auto g = LockGuard();
+            TInodeDataOps ops(Volume);
+            ret = ops.LookupChild(*Inode, name);
+            if (!ret) {
+                return {};
+            }
+        }
+        return std::make_unique<TInode>(std::move(*ret));
+    }
 
     TStorage::TImpl::TChildNameLockGuard::TChildNameLockGuard(TDentry* dentry, std::string name)
         : Dentry_(dentry)

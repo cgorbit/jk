@@ -35,12 +35,7 @@ namespace NJK::NVolume {
         TValue GetValue(const TInode& inode);
         void UnsetValue(TInode& inode);
 
-        std::string DumpTree(bool dumpInodeId = false) {
-            std::stringstream out;
-            DumpTree(out, dumpInodeId);
-            return out.str();
-        }
-
+        std::string DumpTree(bool dumpInodeId = false);
         void DumpTree(std::ostream& out, bool dumpInodeId = false);
         void DoDumpTree(std::ostream& out, const TInode& root, size_t offset, bool dumpInodeId);
 
