@@ -1,11 +1,16 @@
 #! /usr/bin/env bash
 
+set -e
+
 GOOGLE_BENCHMARK=/home/trofimenkov/benchmark
 
 OPTIMIZE_LEVEL=2
 
-THREAD_SANITIZER="-fsanitize=thread -fPIE -pie -g"
-THREAD_SANITIZER=
+if [ "$1" = 'tsan' ]; then
+    THREAD_SANITIZER="-fsanitize=thread -fPIE -pie -g"
+else
+    THREAD_SANITIZER=
+fi
 
 FRAME_POINTER=
 FRAME_POINTER=-fno-omit-frame-pointer
