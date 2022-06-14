@@ -1,0 +1,90 @@
+# To display the perf.data header info, please use --header/--header-only options.
+#
+#
+# Total Lost Samples: 0
+#
+# Samples: 17K of event 'cycles'
+# Event count (approx.): 17208475051
+#
+# Overhead  Command  Shared Object           Symbol                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         
+# ........  .......  ......................  ...................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................
+#
+    41.07%  a.out    a.out                   [.] NJK::TStorage::TImpl::TDentry::LockGuard
+    19.43%  a.out    a.out                   [.] NJK::TStorage::TImpl::ResolveDirs
+    12.66%  a.out    a.out                   [.] NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+     6.60%  a.out    a.out                   [.] NJK::TStorage::TImpl::StepPath
+     3.20%  a.out    libc-2.31.so            [.] __memmove_avx_unaligned_erms
+     3.11%  a.out    a.out                   [.] NJK::TStorage::TImpl::ResolvePath
+     3.00%  a.out    a.out                   [.] NJK::TStorage::TImpl::TDentry::LockChild
+     2.51%  a.out    a.out                   [.] NJK::TStorage::TImpl::TDentry::WaitInitialized
+     2.44%  a.out    [kernel.kallsyms]       [k] read_hpet
+     1.54%  a.out    libstdc++.so.6.0.28     [.] std::_Hash_bytes
+     0.73%  a.out    libc-2.31.so            [.] __memcmp_avx2_movbe
+     0.68%  a.out    a.out                   [.] NJK::TStorage::TImpl::TDentry::GetValue[abi:cxx11]
+     0.58%  a.out    a.out                   [.] NJK::TStorage::TImpl::TDentry::SetValue
+     0.43%  a.out    a.out                   [.] NJK::TStorage::TImpl::Get
+     0.30%  a.out    a.out                   [.] NJK::TStorage::TImpl::Set
+     0.30%  a.out    a.out                   [.] TestConcurrencyIncrement()::$_6::operator()
+     0.25%  a.out    a.out                   [.] memcpy@plt
+     0.16%  a.out    a.out                   [.] NJK::TStorage::TImpl::Erase
+     0.10%  a.out    a.out                   [.] NJK::TStorage::TImpl::TDentry::UnsetValue
+     0.09%  a.out    a.out                   [.] std::_Hash_bytes@plt
+     0.07%  a.out    a.out                   [.] NJK::TStorage::Get
+     0.06%  a.out    a.out                   [.] bcmp@plt
+     0.06%  a.out    a.out                   [.] std::__detail::__variant::__gen_vtable_impl<true, std::__detail::__variant::_Multi_array<std::__detail::__variant::__variant_cookie (*)(std::__detail::__variant::_Variant_storage<false, std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView>::_M_reset_impl()::{lambda(auto:1&&)#1}&&, std::variant<std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView>&)>, std::tuple<std::variant<std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView> >, std::integer_sequence<unsigned long, 3ul> >::__visit_invoke
+     0.05%  a.out    a.out                   [.] std::__detail::__variant::__gen_vtable_impl<true, std::__detail::__variant::_Multi_array<std::__detail::__variant::__variant_cookie (*)(void std::__detail::__variant::__variant_construct<std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView, std::__detail::__variant::_Copy_ctor_base<false, std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView>&, std::__detail::__variant::_Copy_ctor_base<false, std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView> const&>(std::__detail::__variant::_Copy_ctor_base<false, std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView>&, std::__detail::__variant::_Copy_ctor_base<false, std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView> const&)::{lambda(auto:1&&)#1}&&, std::variant<std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView> const&)>, std::tuple<std::variant<std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView> const>, std::integer_sequence<unsigned long, 3ul> >::__visit_invoke
+     0.05%  a.out    [kernel.kallsyms]       [k] kfree
+     0.05%  a.out    [x86_pkg_temp_thermal]  [k] pkg_thermal_notify
+     0.05%  a.out    [kernel.kallsyms]       [k] native_read_msr
+     0.04%  a.out    a.out                   [.] std::__detail::__variant::__gen_vtable_impl<true, std::__detail::__variant::_Multi_array<std::__detail::__variant::__variant_idx_cookie (*)(std::__detail::__variant::_Copy_assign_base<false, std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView>::operator=(std::__detail::__variant::_Copy_assign_base<false, std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView> const&)::{lambda(auto:1&&, auto:2)#1}&&, std::variant<std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView> const&)>, std::tuple<std::variant<std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView> const>, std::integer_sequence<unsigned long, 3ul> >::__visit_invoke
+     0.03%  a.out    libc-2.31.so            [.] _int_free
+     0.03%  a.out    a.out                   [.] std::__detail::__variant::__gen_vtable_impl<true, std::__detail::__variant::_Multi_array<std::__detail::__variant::__variant_cookie (*)(std::__detail::__variant::_Variant_storage<false, std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView>::_M_reset_impl()::{lambda(auto:1&&)#1}&&, std::variant<std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView>&)>, std::tuple<std::variant<std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView> >, std::integer_sequence<unsigned long, 0ul> >::__visit_invoke
+     0.03%  a.out    [kernel.kallsyms]       [k] native_queued_spin_lock_slowpath
+     0.03%  a.out    [kernel.kallsyms]       [k] cgroup_throttle_swaprate
+     0.03%  a.out    [kernel.kallsyms]       [k] rmqueue
+     0.03%  a.out    [kernel.kallsyms]       [k] up_read
+     0.02%  a.out    a.out                   [.] NJK::TStorage::Erase
+     0.02%  a.out    [kernel.kallsyms]       [k] native_write_msr_safe
+     0.01%  a.out    [kernel.kallsyms]       [k] wake_up_bit
+     0.01%  a.out    a.out                   [.] std::__detail::__variant::__gen_vtable_impl<true, std::__detail::__variant::_Multi_array<std::__detail::__variant::__variant_cookie (*)(void std::__detail::__variant::__variant_construct<std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView, std::__detail::__variant::_Copy_ctor_base<false, std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView>&, std::__detail::__variant::_Copy_ctor_base<false, std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView> const&>(std::__detail::__variant::_Copy_ctor_base<false, std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView>&, std::__detail::__variant::_Copy_ctor_base<false, std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView> const&)::{lambda(auto:1&&)#1}&&, std::variant<std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView> const&)>, std::tuple<std::variant<std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView> const>, std::integer_sequence<unsigned long, 0ul> >::__visit_invoke
+     0.01%  a.out    [kernel.kallsyms]       [k] clockevents_program_event
+     0.01%  a.out    [kernel.kallsyms]       [k] sync_regs
+     0.01%  a.out    [kernel.kallsyms]       [k] asm_sysvec_apic_timer_interrupt
+     0.01%  a.out    [kernel.kallsyms]       [k] ext4_chunk_trans_blocks
+     0.01%  a.out    [kernel.kallsyms]       [k] native_write_msr
+     0.01%  a.out    [kernel.kallsyms]       [k] gup_pgd_range
+     0.01%  a.out    [kernel.kallsyms]       [k] __lock_text_start
+     0.01%  a.out    [kernel.kallsyms]       [k] ktime_get_update_offsets_now
+     0.01%  a.out    [kernel.kallsyms]       [k] run_posix_cpu_timers
+     0.01%  a.out    [kernel.kallsyms]       [k] __x64_sys_write
+     0.01%  a.out    [kernel.kallsyms]       [k] __update_load_avg_cfs_rq
+     0.01%  a.out    [kernel.kallsyms]       [k] syscall_enter_from_user_mode
+     0.01%  a.out    [kernel.kallsyms]       [k] futex_wait_setup
+     0.01%  a.out    [kernel.kallsyms]       [k] rcu_advance_cbs
+     0.01%  a.out    [kernel.kallsyms]       [k] lockref_get_not_zero
+     0.01%  a.out    [kernel.kallsyms]       [k] tlb_table_flush
+     0.01%  a.out    a.out                   [.] NJK::TStorage::Set
+     0.01%  a.out    [kernel.kallsyms]       [k] rcu_read_unlock_strict
+     0.01%  a.out    [kernel.kallsyms]       [k] native_irq_return_iret
+     0.01%  a.out    [kernel.kallsyms]       [k] ktime_get
+     0.01%  a.out    [kernel.kallsyms]       [k] raise_softirq
+     0.01%  a.out    [x86_pkg_temp_thermal]  [k] pkg_thermal_rate_control
+     0.01%  a.out    [kernel.kallsyms]       [k] _raw_spin_trylock
+     0.01%  a.out    [kernel.kallsyms]       [k] kmem_cache_alloc
+     0.00%  a.out    [kernel.kallsyms]       [k] ext4_inode_csum.isra.0
+     0.00%  a.out    [kernel.kallsyms]       [k] perf_event_mmap
+     0.00%  a.out    [kernel.kallsyms]       [k] perf_iterate_ctx
+     0.00%  a.out    a.out                   [.] std::thread::_State_impl<std::thread::_Invoker<std::tuple<TestConcurrencyIncrement()::$_7> > >::_M_run
+     0.00%  a.out    [kernel.kallsyms]       [k] __find_get_block
+     0.00%  perf-ex  [kernel.kallsyms]       [k] perf_iterate_ctx
+     0.00%  a.out    [kernel.kallsyms]       [k] nmi_restore
+     0.00%  a.out    [kernel.kallsyms]       [k] __sched_text_start
+     0.00%  a.out    [kernel.kallsyms]       [k] end_repeat_nmi
+     0.00%  a.out    [kernel.kallsyms]       [k] nmi_handle
+     0.00%  a.out    [kernel.kallsyms]       [k] native_sched_clock
+     0.00%  perf-ex  [kernel.kallsyms]       [k] native_write_msr
+
+
+#
+# (Cannot load tips.txt file, please install perf!)
+#

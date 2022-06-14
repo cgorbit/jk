@@ -1,0 +1,26 @@
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXgetCount: 666600, setCount: 666600, eraseCount: 333400, 1.79795, 1.07881e-06
+XgetCount: 800000, setCount: 800000, eraseCount: 200000, 1.89145, 1.05081e-06
+getCount: 857100, setCount: 857100, eraseCount: 142900, 1.92179, 1.03484e-06
+
+ Performance counter stats for './a.out increment':
+
+          5 432,58 msec task-clock                #    2,787 CPUs utilized          
+            14 085      context-switches          #    2,593 K/sec                  
+                16      cpu-migrations            #    2,945 /sec                   
+               623      page-faults               #  114,679 /sec                   
+    20 804 545 676      cycles                    #    3,830 GHz                    
+    15 839 312 162      instructions              #    0,76  insn per cycle         
+     3 347 292 170      branches                  #  616,152 M/sec                  
+        22 299 345      branch-misses             #    0,67% of all branches        
+   101 128 480 870      slots                     #   18,615 G/sec                  
+     8 095 170 930      topdown-retiring          #      7,0% retiring              
+    68 075 539 650      topdown-bad-spec          #     58,6% bad speculation       
+     6 459 492 044      topdown-fe-bound          #      5,6% frontend bound        
+    33 576 849 964      topdown-be-bound          #     28,9% backend bound         
+
+       1,949379795 seconds time elapsed
+
+       5,241747000 seconds user
+       0,288978000 seconds sys
+
+

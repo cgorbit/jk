@@ -1,0 +1,104 @@
+# To display the perf.data header info, please use --header/--header-only options.
+#
+#
+# Total Lost Samples: 0
+#
+# Samples: 3K of event 'cycles'
+# Event count (approx.): 3204664358
+#
+# Overhead  Command  Shared Object        Symbol                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         
+# ........  .......  ...................  ..............................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................
+#
+    16.68%  a.out    a.out                [.] NJK::TStorage::TImpl::TDentry::LockGuard
+     8.11%  a.out    a.out                [.] NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+     7.37%  a.out    a.out                [.] NJK::TStorage::TImpl::TDentry::LockChild
+     5.01%  a.out    libc-2.31.so         [.] __memmove_avx_unaligned_erms
+     4.75%  a.out    a.out                [.] NJK::TStorage::TImpl::TDentry::UnlockChild
+     4.72%  a.out    a.out                [.] NJK::TStorage::TImpl::StepPath
+     4.66%  a.out    libpthread-2.31.so   [.] __pthread_mutex_unlock
+     4.60%  a.out    a.out                [.] NJK::TStorage::TImpl::ResolveDirs
+     4.37%  a.out    libpthread-2.31.so   [.] __pthread_mutex_lock
+     3.88%  a.out    a.out                [.] NJK::TStorage::TImpl::ResolvePath
+     3.85%  a.out    [kernel.kallsyms]    [k] read_hpet
+     3.19%  a.out    libpthread-2.31.so   [.] __pthread_rwlock_rdlock
+     3.02%  a.out    libpthread-2.31.so   [.] __pthread_rwlock_unlock
+     2.00%  a.out    libstdc++.so.6.0.28  [.] std::_Hash_bytes
+     1.81%  a.out    a.out                [.] std::__find_if<__gnu_cxx::__normal_iterator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >*, std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > >, __gnu_cxx::__ops::_Iter_equals_val<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const> >
+     1.77%  a.out    a.out                [.] NJK::TBufOutput::Write
+     1.24%  a.out    a.out                [.] NJK::TCachedBlockFile::GetBlockImpl
+     1.23%  a.out    libc-2.31.so         [.] __memcmp_avx2_movbe
+     1.20%  a.out    a.out                [.] std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > >::_M_erase
+     0.95%  a.out    a.out                [.] NJK::NVolume::TBlockGroup::WriteInode
+     0.92%  a.out    a.out                [.] NJK::TStorage::TImpl::TDentry::WaitInitialized
+     0.90%  a.out    a.out                [.] std::__remove_if<__gnu_cxx::__normal_iterator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >*, std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > >, __gnu_cxx::__ops::_Iter_equals_val<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const> >
+     0.88%  a.out    a.out                [.] memcpy@plt
+     0.73%  a.out    a.out                [.] NJK::TStorage::TImpl::Get
+     0.71%  a.out    a.out                [.] NJK::SerializeMany<NJK::NVolume::TInode::EType const&, unsigned short const&, unsigned int const&, unsigned int const&, bool const&, unsigned short const&, unsigned int const&, char const (&) [38], NJK::TSkipMe>
+     0.67%  a.out    a.out                [.] NJK::TStorage::TImpl::TDentry::SetValue
+     0.64%  a.out    a.out                [.] NJK::NVolume::TInodeDataOps::SetValue
+     0.57%  a.out    a.out                [.] NJK::TStorage::TImpl::TDentry::GetValue[abi:cxx11]
+     0.54%  a.out    a.out                [.] NJK::TStorage::TImpl::Set
+     0.51%  a.out    a.out                [.] NJK::NVolume::TMetaGroup::DoTryAllocateDataBlock
+     0.48%  a.out    a.out                [.] NJK::SerializeMany<unsigned int const&, unsigned int const&, bool const&, unsigned short const&, unsigned int const&, char const (&) [38], NJK::TSkipMe>
+     0.47%  a.out    a.out                [.] NJK::NVolume::TMetaGroup::DeallocateDataBlock
+     0.44%  a.out    a.out                [.] bcmp@plt
+     0.44%  a.out    a.out                [.] NJK::SerializeMany<unsigned int const&, unsigned int const&, NJK::NVolume::TInode::EType const&, unsigned short const&, unsigned int const&, unsigned int const&, bool const&, unsigned short const&, unsigned int const&, char const (&) [38], NJK::TSkipMe>
+     0.42%  a.out    a.out                [.] NJK::NVolume::TInodeDataOps::GetValue[abi:cxx11]
+     0.41%  a.out    a.out                [.] NJK::SerializeMany<bool const&, unsigned short const&, unsigned int const&, char const (&) [38], NJK::TSkipMe>
+     0.38%  a.out    a.out                [.] std::thread::_State_impl<std::thread::_Invoker<std::tuple<TestConcurrencyIncrement()::$_7> > >::_M_run
+     0.35%  a.out    a.out                [.] NJK::NVolume::TMetaGroup::WriteInode
+     0.32%  a.out    a.out                [.] NJK::TVolume::WriteInode
+     0.32%  a.out    a.out                [.] pthread_mutex_unlock@plt
+     0.32%  a.out    a.out                [.] NJK::TVolume::GetMutableDataBlock
+     0.31%  a.out    a.out                [.] NJK::TStorage::TImpl::Erase
+     0.25%  a.out    a.out                [.] pthread_rwlock_unlock@plt
+     0.25%  a.out    a.out                [.] NJK::NVolume::TBlockGroup::TAllocatableItems::TryAllocate
+     0.24%  a.out    a.out                [.] NJK::NVolume::TInode::Serialize
+     0.22%  a.out    a.out                [.] NJK::NVolume::TBlockGroup::GetMutableDataBlock
+     0.22%  a.out    a.out                [.] NJK::NVolume::TInodeDataOps::TInodeDataOps
+     0.22%  a.out    libpthread-2.31.so   [.] pthread_cond_broadcast@@GLIBC_2.3.2
+     0.16%  a.out    a.out                [.] pthread_mutex_lock@plt
+     0.16%  a.out    a.out                [.] NJK::SerializeMany<unsigned int const&, char const (&) [38], NJK::TSkipMe>
+     0.16%  a.out    a.out                [.] NJK::NVolume::TMetaGroup::GetMutableDataBlock
+     0.15%  a.out    a.out                [.] std::_Hash_bytes@plt
+     0.13%  a.out    [kernel.kallsyms]    [k] do_anonymous_page
+     0.13%  a.out    a.out                [.] std::__detail::__variant::__gen_vtable_impl<true, std::__detail::__variant::_Multi_array<std::__detail::__variant::__variant_cookie (*)(std::__detail::__variant::_Variant_storage<false, std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView>::_M_reset_impl()::{lambda(auto:1&&)#1}&&, std::variant<std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView>&)>, std::tuple<std::variant<std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView> >, std::integer_sequence<unsigned long, 3ul> >::__visit_invoke
+     0.13%  a.out    a.out                [.] NJK::TStorage::Get
+     0.12%  a.out    a.out                [.] NJK::TStorage::TImpl::TDentry::UnsetValue
+     0.09%  a.out    a.out                [.] pthread_rwlock_rdlock@plt
+     0.09%  a.out    a.out                [.] NJK::NVolume::TBlockGroup::GetDataBlock
+     0.09%  a.out    a.out                [.] NJK::NVolume::TMetaGroup::GetDataBlock
+     0.09%  a.out    a.out                [.] NJK::TVolume::TImpl::AllocateDataBlock
+     0.06%  a.out    [kernel.kallsyms]    [k] native_write_msr_safe
+     0.06%  a.out    a.out                [.] NJK::TBlockBitSet::FindUnset
+     0.06%  a.out    a.out                [.] NJK::TVolume::AllocateDataBlock
+     0.06%  a.out    a.out                [.] NJK::NVolume::TInodeDataOps::UnsetValue
+     0.06%  a.out    a.out                [.] std::__detail::__variant::__gen_vtable_impl<true, std::__detail::__variant::_Multi_array<std::__detail::__variant::__variant_cookie (*)(void std::__detail::__variant::__variant_construct<std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView, std::__detail::__variant::_Move_ctor_base<false, std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView>&, std::__detail::__variant::_Move_ctor_base<false, std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView> >(std::__detail::__variant::_Move_ctor_base<false, std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView>&, std::__detail::__variant::_Move_ctor_base<false, std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView>&&)::{lambda(auto:1&&)#1}&&, std::variant<std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView>&&)>, std::tuple<std::variant<std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView> >, std::integer_sequence<unsigned long, 3ul> >::__visit_invoke
+     0.06%  a.out    a.out                [.] NJK::NVolume::TBlockGroup::TryAllocateDataBlock
+     0.06%  a.out    libstdc++.so.6.0.28  [.] std::condition_variable::notify_all
+     0.06%  a.out    a.out                [.] NJK::NVolume::TBlockGroup::TAllocatableItems::Deallocate
+     0.03%  a.out    [kernel.kallsyms]    [k] native_read_msr
+     0.03%  a.out    [kernel.kallsyms]    [k] scheduler_tick
+     0.03%  a.out    a.out                [.] NJK::TStorage::Set
+     0.03%  a.out    a.out                [.] NJK::TVolume::GetDataBlock
+     0.03%  a.out    [kernel.kallsyms]    [k] crc_1
+     0.03%  a.out    a.out                [.] NJK::TBufOutput::SkipWrite
+     0.03%  a.out    a.out                [.] NJK::NVolume::TBlockGroup::DeallocateDataBlock
+     0.03%  a.out    a.out                [.] NJK::NVolume::TMetaGroup::TryAllocateDataBlock
+     0.03%  a.out    [kernel.kallsyms]    [k] arch_scale_freq_tick
+     0.03%  a.out    [kernel.kallsyms]    [k] process_echoes
+     0.03%  a.out    [kernel.kallsyms]    [k] detach_if_pending
+     0.02%  a.out    [kernel.kallsyms]    [k] free_pcppages_bulk
+     0.02%  a.out    [kernel.kallsyms]    [k] __iomap_dio_rw
+     0.02%  a.out    [kernel.kallsyms]    [k] zap_pte_range.isra.0
+     0.02%  a.out    libc-2.31.so         [.] _int_free
+     0.02%  a.out    ld-2.31.so           [.] check_match
+     0.01%  a.out    [kernel.kallsyms]    [k] perf_output_begin
+     0.00%  a.out    [kernel.kallsyms]    [k] nmi_restore
+     0.00%  perf-ex  [kernel.kallsyms]    [k] native_write_msr
+     0.00%  a.out    [kernel.kallsyms]    [k] native_write_msr
+
+
+#
+# (Cannot load tips.txt file, please install perf!)
+#

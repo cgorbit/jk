@@ -1,0 +1,36 @@
+diff --git a/storage.cpp b/storage.cpp
+index 5fbe19c..3330fe9 100644
+--- a/storage.cpp
++++ b/storage.cpp
+@@ -430,30 +430,11 @@ TODO_BETTER_CONCURRENCY
+     [[nodiscard]]
+     Y_NO_INLINE
+     TStorage::TImpl::TChildNameLockGuard TStorage::TImpl::TDentry::LockChild(const std::string& name) {
+-        auto copy = name;
+-        {
+-            auto g = LockGuard();
+-            while (true) {
+-                if (std::none_of(ChildrenLocks.begin(), ChildrenLocks.end(), [&](const std::string& other) { return other == name; })) {
+-                    break;
+-                }
+-                ChildrenLocksCondVar.Wait(Lock);
+-            }
+-            ChildrenLocks.emplace_back(std::move(copy));
+-        }
+         return TChildNameLockGuard(this, name);
+     }
+ 
+     Y_NO_INLINE
+-    void TStorage::TImpl::TDentry::UnlockChild(const std::string& name) {
+-        {
+-            auto g = LockGuard();
+-            const size_t size0 = ChildrenLocks.size();
+-            Y_VERIFY(size0 > 0);
+-            std::erase(ChildrenLocks, name);
+-            Y_VERIFY(ChildrenLocks.size() == size0 - 1);
+-        }
+-        ChildrenLocksCondVar.NotifyAll(); // FIXME One
++    void TStorage::TImpl::TDentry::UnlockChild(const std::string&) {
+     }
+ 
+     Y_NO_INLINE

@@ -1,0 +1,613 @@
+diff --git a/block_file.h b/block_file.h
+index 41568ee..6e1d3b7 100644
+--- a/block_file.h
++++ b/block_file.h
+@@ -75,34 +75,39 @@ namespace NJK {
+ 
+     private:
+         struct TRawBlock {
+-            std::mutex Lock;
+-            std::condition_variable CondVar;
++            TNaiveSpinLock Lock;
++            TCondVar CondVar;
+             TFixedBuffer Buf = TFixedBuffer::Empty();
+-            size_t RefCount = 0;
+             bool DataLoaded = false;
+             bool Dirty = false;
+             ui32 InModify = 0;
+             bool Flushing = false;
+         };
+ 
++        using TCache = THashMap<ui32, TRawBlock>;
++        using TRawBlockPtr = TCache::TValuePtr;
++
+     public:
+ 
+         template <bool Mutable>
+         class TPage {
+         public:
+-            TPage(TRawBlock* page)
+-                : Page_(page)
++            TPage(TRawBlockPtr page)
++                : Page_(std::move(page))
+             {
+             }
+ 
+             ~TPage() {
+-                std::lock_guard g(Page_->Lock);
++                auto g = MakeGuard(Page_->Lock);
+                 if (Mutable) {
+                     if (--Page_->InModify == 0) {
+-                        Page_->CondVar.notify_all();
++                        Page_->CondVar.NotifyAll();
+                     }
+                 }
+-                --Page_->RefCount;
++            }
++
++            TPage(TPage&& other) noexcept {
++                Page_.Swap(other.Page_);
+             }
+ 
+             std::conditional_t<Mutable, TFixedBuffer&, const TFixedBuffer&> Buf() const {
+@@ -110,42 +115,37 @@ namespace NJK {
+             }
+ 
+         private:
+-            TRawBlock* Page_{};
++            TRawBlockPtr Page_{};
+         };
+ 
+         TPage<false> GetBlock(size_t blockIdx) {
+             TPage<false> ret{GetBlockImpl(blockIdx, false)};
+-            //std::cerr << "+ GetBlock(" << blockIdx << ") => " << (void*)ret.Buf().Data() << '\n';
+             return ret;
+         }
+ 
+         TPage<true> GetMutableBlock(size_t blockIdx) {
+             TPage<true> ret{GetBlockImpl(blockIdx, true)};
+-            //std::cerr << "+ GetMutableBlock(" << blockIdx << ") => " << (void*)ret.Buf().Data() << '\n';
+             return ret;
+         }
+ 
+     private:
+-        TRawBlock* GetBlockImpl(size_t blockIdx, bool modify) {
+-            TRawBlock* page{};
++        TRawBlockPtr GetBlockImpl(size_t blockIdx, bool modify) {
++            TRawBlockPtr page{};
+             {
+-                std::lock_guard g(Lock_);
+-                page = &Cache_[blockIdx];
++                page = Cache_[blockIdx];
+             }
+ 
+-            std::unique_lock guard(page->Lock);
++            auto guard = MakeGuard(page->Lock);
+             if (page->Buf.Size() == 0) {
+                 page->Buf = TFixedBuffer::Aligned(File_.GetBlockSize()); // TODO BETTER
+-                //std::cerr << "++ Allocated Page: " << (void*)page->Buf.Data() << "\n";
+             }
+-            ++page->RefCount;
+             if (!page->DataLoaded) {
+                 File_.ReadBlock(page->Buf, blockIdx);
+                 page->DataLoaded = true;
+             }
+             if (modify) {
+                 while (page->Flushing) {
+-                    page->CondVar.wait(guard);
++                    page->CondVar.Wait(page->Lock);
+                 }
+                 page->Dirty = true;
+                 ++page->InModify; // we want simultaneously modify different inodes in same block
+@@ -154,24 +154,17 @@ namespace NJK {
+         }
+ 
+         void Flush() {
+-            for (auto& [blockIdx, block] : Cache_) {
++            Cache_.Iterate([this](ui32 blockIdx, TRawBlock& block) {
+                 if (block.Dirty) {
+-                    //std::cerr << "+ write dirty block " << blockIdx << '\n';
+                     File_.WriteBlock(block.Buf, blockIdx);
+                     block.Dirty = false;
+-                } else {
+-                    //std::cerr << "+ skip clean block " << blockIdx << '\n';
+                 }
+-            }
++            });
+         }
+ 
+     private:
+         TBlockDirectIoFile& File_;
+-
+-        std::mutex Lock_;
+-        std::unordered_map<ui32, TRawBlock> Cache_;
+-        // TODO
+-        //THashMap<ui32, TRawBlock> Cache_;
++        THashMap<ui32, TRawBlock> Cache_;
+     };
+ 
+     class TCachedBlockFileRegion {
+@@ -194,4 +187,4 @@ namespace NJK {
+         size_t Offset_ = 0;
+     };
+ 
+-}
+\ No newline at end of file
++}
+diff --git a/hash_map.h b/hash_map.h
+index c268756..e454731 100644
+--- a/hash_map.h
++++ b/hash_map.h
+@@ -75,12 +75,13 @@ namespace NJK {
+         };
+ 
+         THashMap() {
+-            std::unique_lock g(ResizeLock_);
++            CapacityIdx_ = 11;
++            //std::unique_lock g(ResizeLock_);
+             Resize(HashTablePrimes[CapacityIdx_]);
+         }
+ 
+         size_t bucket_count() {
+-            std::shared_lock g(ResizeLock_);
++            //std::shared_lock g(ResizeLock_);
+             return Buckets_.size();
+         }
+ 
+@@ -109,6 +110,17 @@ namespace NJK {
+             return Lookup(key, true);
+         }
+ 
++        template <typename F>
++        void Iterate(F&& f) {
++            for (auto& bucket : Buckets_) {
++                bucket.Lock->lock();
++                for (auto& kv : bucket.Chain) {
++                    f(kv.Key, kv.Value);
++                }
++                bucket.Lock->unlock();
++            }
++        }
++
+     private:
+         TLookupResult Lookup(const TKey& key, bool create);
+ 
+@@ -136,8 +148,8 @@ namespace NJK {
+             std::atomic<size_t> RefCount{0}; // atomic, because bucket lock is changed on hash table resize
+         };
+ 
+-        const float MaxLoadFactor_ = 1.0;
+-        std::shared_mutex ResizeLock_;
++        //const float MaxLoadFactor_ = 1.0;
++        //std::shared_mutex ResizeLock_;
+         //using TKeyValue = std::pair<TKey, TValueWithRefCount>;
+         struct TBucket {
+             std::unique_ptr<TLock> Lock;
+@@ -157,7 +169,7 @@ namespace NJK {
+ 
+         TKeyValue* kv = nullptr;
+         {
+-            std::shared_lock g(ResizeLock_);
++            //std::shared_lock g(ResizeLock_);
+             auto& bucket = Buckets_[hash % Buckets_.size()];
+ 
+             auto g1 = MakeGuard(*bucket.Lock);
+@@ -185,6 +197,7 @@ namespace NJK {
+             return TLookupResult{TValuePtr{}, false};
+         }
+ 
++        #if 0
+         if (loadFactor > MaxLoadFactor_) {
+             std::unique_lock g(ResizeLock_);
+             loadFactor = Size_.load() * 1.0 / Buckets_.size();
+@@ -192,6 +205,7 @@ namespace NJK {
+                 Resize(HashTablePrimes[++CapacityIdx_]);
+             }
+         }
++        #endif
+ 
+         return {TValuePtr{kv}, created};
+     }
+diff --git a/storage.cpp b/storage.cpp
+index 5fbe19c..2d3c019 100644
+--- a/storage.cpp
++++ b/storage.cpp
+@@ -30,6 +30,8 @@ namespace NJK {
+             Root_.Dentry = EnsureMountedInode(rootVolume, rootDir);
+         }
+ 
++        ~TImpl();
++
+         void Set(const std::string& path, const TValue& value, ui32 deadline) {
+             (void)deadline; // TODO
+             auto node = ResolvePath(path, true);
+@@ -119,10 +121,13 @@ namespace NJK {
+                 NotExists,
+             };
+                 
++            static constexpr const size_t MaxLocalValueSize = 128; // TODO
++
+             TNaiveSpinLock Lock;
+ 
+             EState State = EState::Uninitialized;
+             TCondVar InitCondVar;
++            std::atomic<size_t> Initialized{0};
+ 
+             bool CreateLocked = false;
+             TCondVar CreateCondVar;
+@@ -151,10 +156,33 @@ namespace NJK {
+ 
+             //TInode::TId InodeId{};
+             std::unique_ptr<TInode> Inode;
++            std::optional<TValue> LocalValue;
++            ui32 LocalDeadline = 0;
+ 
+             std::unique_ptr<std::vector<TMount>> Mounts;
+ 
+             [[nodiscard]] TLockGuard<TNaiveSpinLock> LockGuard();
++            [[nodiscard]] TLockGuard<TNaiveSpinLock> LockGuard0();
++            [[nodiscard]] TLockGuard<TNaiveSpinLock> LockGuard1();
++            [[nodiscard]] TLockGuard<TNaiveSpinLock> LockGuard2();
++            [[nodiscard]] TLockGuard<TNaiveSpinLock> LockGuard3();
++            [[nodiscard]] TLockGuard<TNaiveSpinLock> LockGuard4();
++            [[nodiscard]] TLockGuard<TNaiveSpinLock> LockGuard5();
++            [[nodiscard]] TLockGuard<TNaiveSpinLock> LockGuard6();
++            [[nodiscard]] TLockGuard<TNaiveSpinLock> LockGuard7();
++            [[nodiscard]] TLockGuard<TNaiveSpinLock> LockGuard8();
++            [[nodiscard]] TLockGuard<TNaiveSpinLock> LockGuard9();
++            [[nodiscard]] TLockGuard<TNaiveSpinLock> LockGuard10();
++            [[nodiscard]] TLockGuard<TNaiveSpinLock> LockGuard11();
++            [[nodiscard]] TLockGuard<TNaiveSpinLock> LockGuard12();
++            [[nodiscard]] TLockGuard<TNaiveSpinLock> LockGuard13();
++            [[nodiscard]] TLockGuard<TNaiveSpinLock> LockGuard14();
++            [[nodiscard]] TLockGuard<TNaiveSpinLock> LockGuard15();
++            [[nodiscard]] TLockGuard<TNaiveSpinLock> LockGuard16();
++            [[nodiscard]] TLockGuard<TNaiveSpinLock> LockGuard17();
++            [[nodiscard]] TLockGuard<TNaiveSpinLock> LockGuard18();
++            [[nodiscard]] TLockGuard<TNaiveSpinLock> LockGuard19();
++            [[nodiscard]] TLockGuard<TNaiveSpinLock> LockGuard20();
+ 
+             void WaitInitialized();
+ 
+@@ -172,7 +200,7 @@ namespace NJK {
+             /////////////////////////////////////////////////////////////////
+ 
+             void LockDirForRead() {
+-                auto g = LockGuard();
++                auto g = LockGuard0();
+                 while (DirWriteLocked) {
+                     DirWriteUnlockedCondVar.Wait(Lock);
+                 }
+@@ -182,7 +210,7 @@ namespace NJK {
+             void UnlockDirForRead() {
+                 bool notify = false;
+                 {
+-                    auto g = LockGuard();
++                    auto g = LockGuard1();
+                     if (--DirReadLocked == 0) {
+                         notify = true;
+                     }
+@@ -193,7 +221,7 @@ namespace NJK {
+             void LockDirForWrite() {
+                 TODO("Write Data into new Data Block and then Swap fast")
+ 
+-                auto g = LockGuard();
++                auto g = LockGuard2();
+                 while (DirReadLocked || DirWriteLocked) {
+                     DirWriteUnlockedCondVar.Wait(Lock);
+                 }
+@@ -202,7 +230,7 @@ namespace NJK {
+ 
+             void UnlockDirForWrite() {
+                 {
+-                    auto g = LockGuard();
++                    auto g = LockGuard3();
+                     DirWriteLocked = false;
+                 }
+                 DirWriteUnlockedCondVar.NotifyAll(); // FIXME
+@@ -211,7 +239,7 @@ namespace NJK {
+             /////////////////////////////////////////////////////////////////
+ 
+             void LockValueForRead() {
+-                auto g = LockGuard();
++                auto g = LockGuard4();
+                 while (ValueWriteLocked) {
+                     ValueWriteUnlockedCondVar.Wait(Lock);
+                 }
+@@ -221,7 +249,7 @@ namespace NJK {
+             void UnlockValueForRead() {
+                 bool notify = false;
+                 {
+-                    auto g = LockGuard();
++                    auto g = LockGuard5();
+                     if (--ValueReadLocked == 0) {
+                         notify = true;
+                     }
+@@ -232,7 +260,7 @@ namespace NJK {
+             void LockValueForWrite() {
+                 TODO("Write Data into new Data Block and then Swap fast")
+ 
+-                auto g = LockGuard();
++                auto g = LockGuard6();
+                 while (ValueReadLocked || ValueWriteLocked) {
+                     ValueWriteUnlockedCondVar.Wait(Lock);
+                 }
+@@ -241,7 +269,7 @@ namespace NJK {
+ 
+             void UnlockValueForWrite() {
+                 {
+-                    auto g = LockGuard();
++                    auto g = LockGuard7();
+                     ValueWriteLocked = false;
+                 }
+                 ValueWriteUnlockedCondVar.NotifyAll(); // FIXME
+@@ -249,6 +277,15 @@ namespace NJK {
+ 
+             /////////////////////////////////////////////////////////////////
+ 
++            void Flush() {
++TODO_BETTER_CONCURRENCY
++                auto g = LockGuard8();
++                if (LocalValue) {
++                    TInodeDataOps ops(Volume);
++                    ops.SetValue(*Inode, *LocalValue, LocalDeadline);
++                }
++            }
++
+             void SetValue(const TValue& value, ui32 deadline) {
+                 LockValueForWrite();
+                 Y_DEFER([this] {
+@@ -256,9 +293,14 @@ namespace NJK {
+                 });
+ 
+ TODO_BETTER_CONCURRENCY
+-                auto g = LockGuard();
+-                TInodeDataOps ops(Volume);
+-                ops.SetValue(*Inode, value, deadline);
++                auto g = LockGuard9();
++                if (auto* str = std::get_if<std::string>(&value); str && str->size() > MaxLocalValueSize) {
++                    TInodeDataOps ops(Volume);
++                    ops.SetValue(*Inode, value, deadline);
++                } else {
++                    LocalValue = value;
++                    LocalDeadline = deadline;
++                }
+             }
+ 
+             void UnsetValue() {
+@@ -268,9 +310,11 @@ TODO_BETTER_CONCURRENCY
+                 });
+ 
+ TODO_BETTER_CONCURRENCY
+-                auto g = LockGuard();
+-                TInodeDataOps ops(Volume);
+-                ops.UnsetValue(*Inode);
++                auto g = LockGuard10();
++                LocalValue = TValue{};
++                LocalDeadline = 0;
++                //TInodeDataOps ops(Volume);
++                //ops.UnsetValue(*Inode);
+             }
+ 
+             TValue GetValue() {
+@@ -280,9 +324,13 @@ TODO_BETTER_CONCURRENCY
+                 });
+ 
+ TODO_BETTER_CONCURRENCY
+-                auto g = LockGuard();
+-                TInodeDataOps ops(Volume);
+-                return ops.GetValue(*Inode);
++                auto g = LockGuard11();
++                if (LocalValue) {
++                    return *LocalValue;
++                } else {
++                    TInodeDataOps ops(Volume);
++                    return ops.GetValue(*Inode);
++                }
+             }
+         };
+ 
+@@ -338,9 +386,10 @@ TODO_BETTER_CONCURRENCY
+             }
+ 
+             ~TDentryWithGuards() {
++                return;
+                 if (Ptr_) {
+                     if (PreventRemoval_) {
+-                        auto g = Ptr_->LockGuard(); // Y_TODO("May be locked already by same thread")
++                        auto g = Ptr_->LockGuard12(); // Y_TODO("May be locked already by same thread")
+                         --Ptr_->PreventRemoval;
+                     }
+                 }
+@@ -419,9 +468,34 @@ TODO_BETTER_CONCURRENCY
+         return MakeGuard(Lock);
+     }
+ 
++    [[nodiscard]] Y_NO_INLINE TLockGuard<TNaiveSpinLock> TStorage::TImpl::TDentry::LockGuard0() { return MakeGuard(Lock); }
++    [[nodiscard]] Y_NO_INLINE TLockGuard<TNaiveSpinLock> TStorage::TImpl::TDentry::LockGuard1() { return MakeGuard(Lock); }
++    [[nodiscard]] Y_NO_INLINE TLockGuard<TNaiveSpinLock> TStorage::TImpl::TDentry::LockGuard2() { return MakeGuard(Lock); }
++    [[nodiscard]] Y_NO_INLINE TLockGuard<TNaiveSpinLock> TStorage::TImpl::TDentry::LockGuard3() { return MakeGuard(Lock); }
++    [[nodiscard]] Y_NO_INLINE TLockGuard<TNaiveSpinLock> TStorage::TImpl::TDentry::LockGuard4() { return MakeGuard(Lock); }
++    [[nodiscard]] Y_NO_INLINE TLockGuard<TNaiveSpinLock> TStorage::TImpl::TDentry::LockGuard5() { return MakeGuard(Lock); }
++    [[nodiscard]] Y_NO_INLINE TLockGuard<TNaiveSpinLock> TStorage::TImpl::TDentry::LockGuard6() { return MakeGuard(Lock); }
++    [[nodiscard]] Y_NO_INLINE TLockGuard<TNaiveSpinLock> TStorage::TImpl::TDentry::LockGuard7() { return MakeGuard(Lock); }
++    [[nodiscard]] Y_NO_INLINE TLockGuard<TNaiveSpinLock> TStorage::TImpl::TDentry::LockGuard8() { return MakeGuard(Lock); }
++    [[nodiscard]] Y_NO_INLINE TLockGuard<TNaiveSpinLock> TStorage::TImpl::TDentry::LockGuard9() { return MakeGuard(Lock); }
++    [[nodiscard]] Y_NO_INLINE TLockGuard<TNaiveSpinLock> TStorage::TImpl::TDentry::LockGuard10() { return MakeGuard(Lock); }
++    [[nodiscard]] Y_NO_INLINE TLockGuard<TNaiveSpinLock> TStorage::TImpl::TDentry::LockGuard11() { return MakeGuard(Lock); }
++    [[nodiscard]] Y_NO_INLINE TLockGuard<TNaiveSpinLock> TStorage::TImpl::TDentry::LockGuard12() { return MakeGuard(Lock); }
++    [[nodiscard]] Y_NO_INLINE TLockGuard<TNaiveSpinLock> TStorage::TImpl::TDentry::LockGuard13() { return MakeGuard(Lock); }
++    [[nodiscard]] Y_NO_INLINE TLockGuard<TNaiveSpinLock> TStorage::TImpl::TDentry::LockGuard14() { return MakeGuard(Lock); }
++    [[nodiscard]] Y_NO_INLINE TLockGuard<TNaiveSpinLock> TStorage::TImpl::TDentry::LockGuard15() { return MakeGuard(Lock); }
++    [[nodiscard]] Y_NO_INLINE TLockGuard<TNaiveSpinLock> TStorage::TImpl::TDentry::LockGuard16() { return MakeGuard(Lock); }
++    [[nodiscard]] Y_NO_INLINE TLockGuard<TNaiveSpinLock> TStorage::TImpl::TDentry::LockGuard17() { return MakeGuard(Lock); }
++    [[nodiscard]] Y_NO_INLINE TLockGuard<TNaiveSpinLock> TStorage::TImpl::TDentry::LockGuard18() { return MakeGuard(Lock); }
++    [[nodiscard]] Y_NO_INLINE TLockGuard<TNaiveSpinLock> TStorage::TImpl::TDentry::LockGuard19() { return MakeGuard(Lock); }
++    [[nodiscard]] Y_NO_INLINE TLockGuard<TNaiveSpinLock> TStorage::TImpl::TDentry::LockGuard20() { return MakeGuard(Lock); }
++
+     Y_NO_INLINE
+     void TStorage::TImpl::TDentry::WaitInitialized() {
+-        auto g = LockGuard();
++        if (Initialized.load()) {
++            return;
++        }
++        auto g = LockGuard13();
+         while (State == EState::Uninitialized) {
+             InitCondVar.Wait(Lock);
+         }
+@@ -430,30 +504,11 @@ TODO_BETTER_CONCURRENCY
+     [[nodiscard]]
+     Y_NO_INLINE
+     TStorage::TImpl::TChildNameLockGuard TStorage::TImpl::TDentry::LockChild(const std::string& name) {
+-        auto copy = name;
+-        {
+-            auto g = LockGuard();
+-            while (true) {
+-                if (std::none_of(ChildrenLocks.begin(), ChildrenLocks.end(), [&](const std::string& other) { return other == name; })) {
+-                    break;
+-                }
+-                ChildrenLocksCondVar.Wait(Lock);
+-            }
+-            ChildrenLocks.emplace_back(std::move(copy));
+-        }
+         return TChildNameLockGuard(this, name);
+     }
+ 
+     Y_NO_INLINE
+-    void TStorage::TImpl::TDentry::UnlockChild(const std::string& name) {
+-        {
+-            auto g = LockGuard();
+-            const size_t size0 = ChildrenLocks.size();
+-            Y_VERIFY(size0 > 0);
+-            std::erase(ChildrenLocks, name);
+-            Y_VERIFY(ChildrenLocks.size() == size0 - 1);
+-        }
+-        ChildrenLocksCondVar.NotifyAll(); // FIXME One
++    void TStorage::TImpl::TDentry::UnlockChild(const std::string&) {
+     }
+ 
+     Y_NO_INLINE
+@@ -475,7 +530,7 @@ TODO_BETTER_CONCURRENCY
+             });
+ 
+ TODO_BETTER_CONCURRENCY
+-            auto g = LockGuard();
++            auto g = LockGuard14();
+             TInodeDataOps ops(Volume);
+             ret = ops.EnsureChild(*Inode, name);
+         }
+@@ -494,7 +549,7 @@ TODO_BETTER_CONCURRENCY
+         std::optional<TInode> ret;
+         {
+ TODO_BETTER_CONCURRENCY
+-            auto g = LockGuard();
++            auto g = LockGuard15();
+             TInodeDataOps ops(Volume);
+             ret = ops.LookupChild(*Inode, name);
+             if (!ret) {
+@@ -641,9 +696,6 @@ TODO_BETTER_CONCURRENCY
+         auto* volume = parentExt.Volume;
+         auto& parent = parentExt.Dentry;
+ 
+-        // 1. parent ++ref_count to prevent cache removal (inside hashmap impl)
+-        // 2. parent can be in NotExists state, so lock this 
+-
+         const TDentryCacheKey childCacheKey{{volume, parent->Inode->Id}, childName};
+         auto emplaceResult = DentryCache_.emplace_key(childCacheKey);
+         auto child = Wrap(std::move(emplaceResult.Obj));
+@@ -664,16 +716,17 @@ TODO_BETTER_CONCURRENCY
+ 
+                 if (!childInode) {
+                     {
+-                        auto g = child->LockGuard();
++                        auto g = child->LockGuard16();
+                         child->State = TDentry::EState::NotExists;
+                         child->InParentName = std::move(childName);
+                         child->Volume = volume;
+                     }
++                    child->Initialized.store(1);
+                     return {};
+                 }
+ 
+                 {
+-                    auto g = child->LockGuard();
++                    auto g = child->LockGuard17();
+                     child->Inode = std::move(childInode);
+                     child->State = TDentry::EState::Exists;
+                     child->InParentName = std::move(childName);
+@@ -681,6 +734,7 @@ TODO_BETTER_CONCURRENCY
+                     ++child->PreventRemoval;
+                     child.PreventRemoval();
+                 }
++                child->Initialized.store(1);
+             }
+             return child;
+         } else {
+@@ -689,11 +743,11 @@ TODO_BETTER_CONCURRENCY
+             auto childGuard = parent->LockChild(childName);
+ 
+             {
+-                auto g = child->LockGuard();
++                auto g = child->LockGuard18();
+                 while (true) {
+                     if (child->State == TDentry::EState::Exists) {
+-                        ++child->PreventRemoval;
+-                        child.PreventRemoval();
++                        //++child->PreventRemoval;
++                        //child.PreventRemoval();
+                         return child;
+                     } else if (!params.Create) {
+                         return {};
+@@ -711,7 +765,7 @@ TODO_BETTER_CONCURRENCY
+ 
+             TInodePtr childInode = parent->EnsureChild(childName, childGuard);
+             {
+-                auto g = child->LockGuard();
++                auto g = child->LockGuard19();
+                 child->Inode = std::move(childInode);
+                 child->State = TDentry::EState::Exists;
+                 ++child->PreventRemoval;
+@@ -799,17 +853,20 @@ TODO_BETTER_CONCURRENCY
+         auto srcInode = ResolveInVolumePath(srcVolume, srcDir);
+         auto& dentry = Mounted_[{srcVolume, srcInode.Id}];
+ 
+-        auto g = dentry.LockGuard();
+-        if (dentry.State == TDentry::EState::Uninitialized) {
+-            std::stringstream s;
+-            s << (void*)srcVolume << srcVolume->GetFsDir() << '@' << srcDir;
+-            dentry.InParentName = s.str();
+-            dentry.Volume = srcVolume;
+-            // TODO Better
+-            dentry.Inode.reset(new TInode());
+-            *dentry.Inode = std::move(srcInode);
+-            dentry.State = TDentry::EState::Exists;
++        {
++            auto g = dentry.LockGuard20();
++            if (dentry.State == TDentry::EState::Uninitialized) {
++                std::stringstream s;
++                s << (void*)srcVolume << srcVolume->GetFsDir() << '@' << srcDir;
++                dentry.InParentName = s.str();
++                dentry.Volume = srcVolume;
++                // TODO Better
++                dentry.Inode.reset(new TInode());
++                *dentry.Inode = std::move(srcInode);
++                dentry.State = TDentry::EState::Exists;
++            }
+         }
++        dentry.Initialized.store(1);
+ 
+         return &dentry;
+     }
+@@ -824,6 +881,12 @@ TODO_BETTER_CONCURRENCY
+         mount.Dentry = EnsureMountedInode(srcVolume, srcDir);
+     }
+ 
++    TStorage::TImpl::~TImpl() {
++        DentryCache_.Iterate([] (const TDentryCacheKey&, TDentry& dentry) {
++            dentry.Flush();
++        });
++    }
++
+     TStorage::TStorage(TVolume* rootVolume, const std::string& rootDir)
+         : Impl_(new TImpl(rootVolume, rootDir))
+     {

@@ -1,0 +1,92 @@
+diff --git a/hash_map.h b/hash_map.h
+index c268756..5f9a7ef 100644
+--- a/hash_map.h
++++ b/hash_map.h
+@@ -75,12 +75,13 @@ namespace NJK {
+         };
+ 
+         THashMap() {
+-            std::unique_lock g(ResizeLock_);
++            CapacityIdx_ = 11;
++            //std::unique_lock g(ResizeLock_);
+             Resize(HashTablePrimes[CapacityIdx_]);
+         }
+ 
+         size_t bucket_count() {
+-            std::shared_lock g(ResizeLock_);
++            //std::shared_lock g(ResizeLock_);
+             return Buckets_.size();
+         }
+ 
+@@ -136,8 +137,8 @@ namespace NJK {
+             std::atomic<size_t> RefCount{0}; // atomic, because bucket lock is changed on hash table resize
+         };
+ 
+-        const float MaxLoadFactor_ = 1.0;
+-        std::shared_mutex ResizeLock_;
++        //const float MaxLoadFactor_ = 1.0;
++        //std::shared_mutex ResizeLock_;
+         //using TKeyValue = std::pair<TKey, TValueWithRefCount>;
+         struct TBucket {
+             std::unique_ptr<TLock> Lock;
+@@ -157,7 +158,7 @@ namespace NJK {
+ 
+         TKeyValue* kv = nullptr;
+         {
+-            std::shared_lock g(ResizeLock_);
++            //std::shared_lock g(ResizeLock_);
+             auto& bucket = Buckets_[hash % Buckets_.size()];
+ 
+             auto g1 = MakeGuard(*bucket.Lock);
+@@ -185,6 +186,7 @@ namespace NJK {
+             return TLookupResult{TValuePtr{}, false};
+         }
+ 
++        #if 0
+         if (loadFactor > MaxLoadFactor_) {
+             std::unique_lock g(ResizeLock_);
+             loadFactor = Size_.load() * 1.0 / Buckets_.size();
+@@ -192,6 +194,7 @@ namespace NJK {
+                 Resize(HashTablePrimes[++CapacityIdx_]);
+             }
+         }
++        #endif
+ 
+         return {TValuePtr{kv}, created};
+     }
+diff --git a/storage.cpp b/storage.cpp
+index 5fbe19c..3330fe9 100644
+--- a/storage.cpp
++++ b/storage.cpp
+@@ -430,30 +430,11 @@ TODO_BETTER_CONCURRENCY
+     [[nodiscard]]
+     Y_NO_INLINE
+     TStorage::TImpl::TChildNameLockGuard TStorage::TImpl::TDentry::LockChild(const std::string& name) {
+-        auto copy = name;
+-        {
+-            auto g = LockGuard();
+-            while (true) {
+-                if (std::none_of(ChildrenLocks.begin(), ChildrenLocks.end(), [&](const std::string& other) { return other == name; })) {
+-                    break;
+-                }
+-                ChildrenLocksCondVar.Wait(Lock);
+-            }
+-            ChildrenLocks.emplace_back(std::move(copy));
+-        }
+         return TChildNameLockGuard(this, name);
+     }
+ 
+     Y_NO_INLINE
+-    void TStorage::TImpl::TDentry::UnlockChild(const std::string& name) {
+-        {
+-            auto g = LockGuard();
+-            const size_t size0 = ChildrenLocks.size();
+-            Y_VERIFY(size0 > 0);
+-            std::erase(ChildrenLocks, name);
+-            Y_VERIFY(ChildrenLocks.size() == size0 - 1);
+-        }
+-        ChildrenLocksCondVar.NotifyAll(); // FIXME One
++    void TStorage::TImpl::TDentry::UnlockChild(const std::string&) {
+     }
+ 
+     Y_NO_INLINE

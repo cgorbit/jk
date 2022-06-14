@@ -1,0 +1,56 @@
+diff --git a/hash_map.h b/hash_map.h
+index c268756..5f9a7ef 100644
+--- a/hash_map.h
++++ b/hash_map.h
+@@ -75,12 +75,13 @@ namespace NJK {
+         };
+ 
+         THashMap() {
+-            std::unique_lock g(ResizeLock_);
++            CapacityIdx_ = 11;
++            //std::unique_lock g(ResizeLock_);
+             Resize(HashTablePrimes[CapacityIdx_]);
+         }
+ 
+         size_t bucket_count() {
+-            std::shared_lock g(ResizeLock_);
++            //std::shared_lock g(ResizeLock_);
+             return Buckets_.size();
+         }
+ 
+@@ -136,8 +137,8 @@ namespace NJK {
+             std::atomic<size_t> RefCount{0}; // atomic, because bucket lock is changed on hash table resize
+         };
+ 
+-        const float MaxLoadFactor_ = 1.0;
+-        std::shared_mutex ResizeLock_;
++        //const float MaxLoadFactor_ = 1.0;
++        //std::shared_mutex ResizeLock_;
+         //using TKeyValue = std::pair<TKey, TValueWithRefCount>;
+         struct TBucket {
+             std::unique_ptr<TLock> Lock;
+@@ -157,7 +158,7 @@ namespace NJK {
+ 
+         TKeyValue* kv = nullptr;
+         {
+-            std::shared_lock g(ResizeLock_);
++            //std::shared_lock g(ResizeLock_);
+             auto& bucket = Buckets_[hash % Buckets_.size()];
+ 
+             auto g1 = MakeGuard(*bucket.Lock);
+@@ -185,6 +186,7 @@ namespace NJK {
+             return TLookupResult{TValuePtr{}, false};
+         }
+ 
++        #if 0
+         if (loadFactor > MaxLoadFactor_) {
+             std::unique_lock g(ResizeLock_);
+             loadFactor = Size_.load() * 1.0 / Buckets_.size();
+@@ -192,6 +194,7 @@ namespace NJK {
+                 Resize(HashTablePrimes[++CapacityIdx_]);
+             }
+         }
++        #endif
+ 
+         return {TValuePtr{kv}, created};
+     }

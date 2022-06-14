@@ -1,0 +1,2070 @@
+# To display the perf.data header info, please use --header/--header-only options.
+#
+#
+# Total Lost Samples: 0
+#
+# Samples: 8K of event 'cycles'
+# Event count (approx.): 8581899083
+#
+# Children      Self  Command  Shared Object        Symbol                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         
+# ........  ........  .......  ...................  ...................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................
+#
+    99.00%     0.00%  a.out    [unknown]            [.] 0xfffffdd0e9000000
+            |
+            ---0xfffffdd0e9000000
+               |          
+               |--33.77%--std::thread::_State_impl<std::thread::_Invoker<std::tuple<TestConcurrencyIncrement()::$_8> > >::~_State_impl
+               |          0x7fff725b9e38
+               |          0x7f1849b9ede4
+               |          |          
+               |           --33.67%--TestConcurrencyIncrement()::$_6::operator()
+               |                     |          
+               |                     |--16.23%--NJK::TStorage::Get
+               |                     |          |          
+               |                     |          |--14.42%--NJK::TStorage::TImpl::ResolvePath
+               |                     |          |          |          
+               |                     |          |          |--11.02%--NJK::TStorage::TImpl::ResolveDirs
+               |                     |          |          |          |          
+               |                     |          |          |           --8.06%--NJK::TStorage::TImpl::StepPath
+               |                     |          |          |                     |          
+               |                     |          |          |                     |--4.09%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+               |                     |          |          |                     |          
+               |                     |          |          |                     |--1.45%--NJK::TStorage::TImpl::TDentry::LockGuard18
+               |                     |          |          |                     |          
+               |                     |          |          |                      --0.76%--NJK::TStorage::TImpl::TDentry::LockChild
+               |                     |          |          |          
+               |                     |          |           --2.20%--NJK::TStorage::TImpl::StepPath
+               |                     |          |                     |          
+               |                     |          |                      --0.98%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+               |                     |          |          
+               |                     |           --1.21%--NJK::TStorage::TImpl::TDentry::GetValue[abi:cxx11]
+               |                     |          
+               |                     |--14.22%--NJK::TStorage::TImpl::Set
+               |                     |          |          
+               |                     |          |--12.74%--NJK::TStorage::TImpl::ResolvePath
+               |                     |          |          |          
+               |                     |          |          |--10.20%--NJK::TStorage::TImpl::ResolveDirs
+               |                     |          |          |          |          
+               |                     |          |          |           --7.34%--NJK::TStorage::TImpl::StepPath
+               |                     |          |          |                     |          
+               |                     |          |          |                     |--3.65%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+               |                     |          |          |                     |          
+               |                     |          |          |                     |--1.18%--NJK::TStorage::TImpl::TDentry::LockGuard18
+               |                     |          |          |                     |          
+               |                     |          |          |                     |--0.75%--NJK::TStorage::TImpl::TDentry::LockChild
+               |                     |          |          |                     |          
+               |                     |          |          |                      --0.54%--NJK::TStorage::TImpl::TDentry::WaitInitialized
+               |                     |          |          |          
+               |                     |          |           --1.50%--NJK::TStorage::TImpl::StepPath
+               |                     |          |          
+               |                     |           --0.96%--NJK::TStorage::TImpl::TDentry::SetValue
+               |                     |          
+               |                      --2.96%--NJK::TStorage::Erase
+               |                                |          
+               |                                 --2.59%--NJK::TStorage::TImpl::ResolvePath
+               |                                           |          
+               |                                            --2.00%--NJK::TStorage::TImpl::ResolveDirs
+               |                                                      |          
+               |                                                       --1.44%--NJK::TStorage::TImpl::StepPath
+               |                                                                 |          
+               |                                                                  --0.79%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+               |          
+               |--33.37%--std::thread::_State_impl<std::thread::_Invoker<std::tuple<TestConcurrencyIncrement()::$_9> > >::~_State_impl
+               |          0x7fff725b9e38
+               |          0x7f1849b9ede4
+               |          |          
+               |           --33.35%--TestConcurrencyIncrement()::$_6::operator()
+               |                     |          
+               |                     |--15.35%--NJK::TStorage::Get
+               |                     |          |          
+               |                     |          |--13.94%--NJK::TStorage::TImpl::ResolvePath
+               |                     |          |          |          
+               |                     |          |          |--11.02%--NJK::TStorage::TImpl::ResolveDirs
+               |                     |          |          |          |          
+               |                     |          |          |           --7.83%--NJK::TStorage::TImpl::StepPath
+               |                     |          |          |                     |          
+               |                     |          |          |                     |--3.80%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+               |                     |          |          |                     |          
+               |                     |          |          |                     |--1.67%--NJK::TStorage::TImpl::TDentry::LockGuard18
+               |                     |          |          |                     |          
+               |                     |          |          |                      --0.66%--NJK::TStorage::TImpl::TDentry::LockChild
+               |                     |          |          |          
+               |                     |          |           --2.01%--NJK::TStorage::TImpl::StepPath
+               |                     |          |                     |          
+               |                     |          |                      --0.81%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+               |                     |          |          
+               |                     |           --1.04%--NJK::TStorage::TImpl::TDentry::GetValue[abi:cxx11]
+               |                     |          
+               |                     |--13.80%--NJK::TStorage::TImpl::Set
+               |                     |          |          
+               |                     |          |--12.46%--NJK::TStorage::TImpl::ResolvePath
+               |                     |          |          |          
+               |                     |          |          |--9.97%--NJK::TStorage::TImpl::ResolveDirs
+               |                     |          |          |          |          
+               |                     |          |          |           --7.30%--NJK::TStorage::TImpl::StepPath
+               |                     |          |          |                     |          
+               |                     |          |          |                     |--3.56%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+               |                     |          |          |                     |          
+               |                     |          |          |                     |--1.15%--NJK::TStorage::TImpl::TDentry::LockGuard18
+               |                     |          |          |                     |          
+               |                     |          |          |                      --0.72%--NJK::TStorage::TImpl::TDentry::LockChild
+               |                     |          |          |          
+               |                     |          |           --1.63%--NJK::TStorage::TImpl::StepPath
+               |                     |          |                     |          
+               |                     |          |                      --0.63%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+               |                     |          |          
+               |                     |           --0.93%--NJK::TStorage::TImpl::TDentry::SetValue
+               |                     |          
+               |                      --3.98%--NJK::TStorage::Erase
+               |                                |          
+               |                                 --3.60%--NJK::TStorage::TImpl::ResolvePath
+               |                                           |          
+               |                                           |--2.62%--NJK::TStorage::TImpl::ResolveDirs
+               |                                           |          |          
+               |                                           |           --1.84%--NJK::TStorage::TImpl::StepPath
+               |                                           |                     |          
+               |                                           |                      --0.88%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+               |                                           |          
+               |                                            --0.57%--NJK::TStorage::TImpl::StepPath
+               |          
+                --31.86%--std::thread::_State_impl<std::thread::_Invoker<std::tuple<TestConcurrencyIncrement()::$_7> > >::~_State_impl
+                          0x7fff725b9e38
+                          0x7f1849b9ede4
+                          |          
+                           --31.80%--TestConcurrencyIncrement()::$_6::operator()
+                                     |          
+                                     |--13.34%--NJK::TStorage::Get
+                                     |          |          
+                                     |          |--11.92%--NJK::TStorage::TImpl::ResolvePath
+                                     |          |          |          
+                                     |          |          |--9.34%--NJK::TStorage::TImpl::ResolveDirs
+                                     |          |          |          |          
+                                     |          |          |           --6.63%--NJK::TStorage::TImpl::StepPath
+                                     |          |          |                     |          
+                                     |          |          |                     |--3.56%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+                                     |          |          |                     |          
+                                     |          |          |                     |--1.09%--NJK::TStorage::TImpl::TDentry::LockGuard18
+                                     |          |          |                     |          
+                                     |          |          |                      --0.60%--NJK::TStorage::TImpl::TDentry::LockChild
+                                     |          |          |          
+                                     |          |           --1.64%--NJK::TStorage::TImpl::StepPath
+                                     |          |                     |          
+                                     |          |                      --0.83%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+                                     |          |          
+                                     |           --0.97%--NJK::TStorage::TImpl::TDentry::GetValue[abi:cxx11]
+                                     |          
+                                     |--12.03%--NJK::TStorage::TImpl::Set
+                                     |          |          
+                                     |          |--10.72%--NJK::TStorage::TImpl::ResolvePath
+                                     |          |          |          
+                                     |          |          |--8.55%--NJK::TStorage::TImpl::ResolveDirs
+                                     |          |          |          |          
+                                     |          |          |           --6.09%--NJK::TStorage::TImpl::StepPath
+                                     |          |          |                     |          
+                                     |          |          |                     |--3.35%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+                                     |          |          |                     |          
+                                     |          |          |                     |--0.99%--NJK::TStorage::TImpl::TDentry::LockGuard18
+                                     |          |          |                     |          
+                                     |          |          |                      --0.51%--NJK::TStorage::TImpl::TDentry::LockChild
+                                     |          |          |          
+                                     |          |           --1.35%--NJK::TStorage::TImpl::StepPath
+                                     |          |                     |          
+                                     |          |                      --0.55%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+                                     |          |          
+                                     |           --0.94%--NJK::TStorage::TImpl::TDentry::SetValue
+                                     |          
+                                      --6.16%--NJK::TStorage::Erase
+                                                |          
+                                                |--5.39%--NJK::TStorage::TImpl::ResolvePath
+                                                |          |          
+                                                |          |--4.28%--NJK::TStorage::TImpl::ResolveDirs
+                                                |          |          |          
+                                                |          |           --2.97%--NJK::TStorage::TImpl::StepPath
+                                                |          |                     |          
+                                                |          |                     |--1.51%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+                                                |          |                     |          
+                                                |          |                      --0.59%--NJK::TStorage::TImpl::TDentry::LockGuard18
+                                                |          |          
+                                                |           --0.65%--NJK::TStorage::TImpl::StepPath
+                                                |          
+                                                 --0.53%--NJK::TStorage::TImpl::TDentry::UnsetValue
+
+    99.00%     0.00%  a.out    [unknown]            [.] 0x00007fff725b9e38
+            |
+            ---0x7fff725b9e38
+               0x7f1849b9ede4
+               |          
+                --98.82%--TestConcurrencyIncrement()::$_6::operator()
+                          |          
+                          |--44.91%--NJK::TStorage::Get
+                          |          |          
+                          |          |--40.27%--NJK::TStorage::TImpl::ResolvePath
+                          |          |          |          
+                          |          |          |--31.37%--NJK::TStorage::TImpl::ResolveDirs
+                          |          |          |          |          
+                          |          |          |           --22.52%--NJK::TStorage::TImpl::StepPath
+                          |          |          |                     |          
+                          |          |          |                     |--11.45%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+                          |          |          |                     |          |          
+                          |          |          |                     |           --0.50%--asm_sysvec_apic_timer_interrupt
+                          |          |          |                     |                     sysvec_apic_timer_interrupt
+                          |          |          |                     |          
+                          |          |          |                     |--4.21%--NJK::TStorage::TImpl::TDentry::LockGuard18
+                          |          |          |                     |          
+                          |          |          |                     |--2.02%--NJK::TStorage::TImpl::TDentry::LockChild
+                          |          |          |                     |          
+                          |          |          |                     |--0.95%--NJK::TStorage::TImpl::TDentry::WaitInitialized
+                          |          |          |                     |          
+                          |          |          |                      --0.79%--std::_Hash_bytes
+                          |          |          |          
+                          |          |           --5.84%--NJK::TStorage::TImpl::StepPath
+                          |          |                     |          
+                          |          |                     |--2.62%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+                          |          |                     |          
+                          |          |                     |--0.66%--NJK::TStorage::TImpl::TDentry::LockGuard18
+                          |          |                     |          
+                          |          |                     |--0.57%--std::_Hash_bytes
+                          |          |                     |          
+                          |          |                      --0.56%--NJK::TStorage::TImpl::TDentry::LockChild
+                          |          |          
+                          |           --3.21%--NJK::TStorage::TImpl::TDentry::GetValue[abi:cxx11]
+                          |                     |          
+                          |                     |--1.04%--NJK::TStorage::TImpl::TDentry::LockGuard11
+                          |                     |          
+                          |                     |--0.58%--NJK::TStorage::TImpl::TDentry::LockGuard5
+                          |                     |          
+                          |                      --0.54%--NJK::TStorage::TImpl::TDentry::LockGuard4
+                          |          
+                          |--40.06%--NJK::TStorage::TImpl::Set
+                          |          |          
+                          |          |--35.92%--NJK::TStorage::TImpl::ResolvePath
+                          |          |          |          
+                          |          |          |--28.73%--NJK::TStorage::TImpl::ResolveDirs
+                          |          |          |          |          
+                          |          |          |           --20.73%--NJK::TStorage::TImpl::StepPath
+                          |          |          |                     |          
+                          |          |          |                     |--10.56%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+                          |          |          |                     |          
+                          |          |          |                     |--3.32%--NJK::TStorage::TImpl::TDentry::LockGuard18
+                          |          |          |                     |          
+                          |          |          |                     |--1.99%--NJK::TStorage::TImpl::TDentry::LockChild
+                          |          |          |                     |          
+                          |          |          |                     |--1.05%--NJK::TStorage::TImpl::TDentry::WaitInitialized
+                          |          |          |                     |          
+                          |          |          |                      --0.87%--std::_Hash_bytes
+                          |          |          |          
+                          |          |           --4.48%--NJK::TStorage::TImpl::StepPath
+                          |          |                     |          
+                          |          |                     |--1.63%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+                          |          |                     |          
+                          |          |                      --0.51%--std::_Hash_bytes
+                          |          |          
+                          |          |--2.83%--NJK::TStorage::TImpl::TDentry::SetValue
+                          |          |          |          
+                          |          |          |--0.82%--NJK::TStorage::TImpl::TDentry::LockGuard7
+                          |          |          |          
+                          |          |           --0.56%--NJK::TStorage::TImpl::TDentry::LockGuard9
+                          |          |          
+                          |           --0.51%--__memmove_avx_unaligned_erms
+                          |          
+                           --13.10%--NJK::TStorage::Erase
+                                     |          
+                                     |--11.59%--NJK::TStorage::TImpl::ResolvePath
+                                     |          |          
+                                     |          |--8.90%--NJK::TStorage::TImpl::ResolveDirs
+                                     |          |          |          
+                                     |          |           --6.25%--NJK::TStorage::TImpl::StepPath
+                                     |          |                     |          
+                                     |          |                     |--3.18%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+                                     |          |                     |          
+                                     |          |                      --1.17%--NJK::TStorage::TImpl::TDentry::LockGuard18
+                                     |          |          
+                                     |           --1.68%--NJK::TStorage::TImpl::StepPath
+                                     |                     |          
+                                     |                      --0.74%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+                                     |          
+                                      --1.07%--NJK::TStorage::TImpl::TDentry::UnsetValue
+
+    99.00%     0.00%  a.out    libstdc++.so.6.0.28  [.] 0x00007f1849b9ede4
+            |
+            ---0x7f1849b9ede4
+               |          
+                --98.82%--TestConcurrencyIncrement()::$_6::operator()
+                          |          
+                          |--44.91%--NJK::TStorage::Get
+                          |          |          
+                          |          |--40.27%--NJK::TStorage::TImpl::ResolvePath
+                          |          |          |          
+                          |          |          |--31.37%--NJK::TStorage::TImpl::ResolveDirs
+                          |          |          |          |          
+                          |          |          |           --22.52%--NJK::TStorage::TImpl::StepPath
+                          |          |          |                     |          
+                          |          |          |                     |--11.45%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+                          |          |          |                     |          |          
+                          |          |          |                     |           --0.50%--asm_sysvec_apic_timer_interrupt
+                          |          |          |                     |                     sysvec_apic_timer_interrupt
+                          |          |          |                     |          
+                          |          |          |                     |--4.21%--NJK::TStorage::TImpl::TDentry::LockGuard18
+                          |          |          |                     |          
+                          |          |          |                     |--2.02%--NJK::TStorage::TImpl::TDentry::LockChild
+                          |          |          |                     |          
+                          |          |          |                     |--0.95%--NJK::TStorage::TImpl::TDentry::WaitInitialized
+                          |          |          |                     |          
+                          |          |          |                      --0.79%--std::_Hash_bytes
+                          |          |          |          
+                          |          |           --5.84%--NJK::TStorage::TImpl::StepPath
+                          |          |                     |          
+                          |          |                     |--2.62%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+                          |          |                     |          
+                          |          |                     |--0.66%--NJK::TStorage::TImpl::TDentry::LockGuard18
+                          |          |                     |          
+                          |          |                     |--0.57%--std::_Hash_bytes
+                          |          |                     |          
+                          |          |                      --0.56%--NJK::TStorage::TImpl::TDentry::LockChild
+                          |          |          
+                          |           --3.21%--NJK::TStorage::TImpl::TDentry::GetValue[abi:cxx11]
+                          |                     |          
+                          |                     |--1.04%--NJK::TStorage::TImpl::TDentry::LockGuard11
+                          |                     |          
+                          |                     |--0.58%--NJK::TStorage::TImpl::TDentry::LockGuard5
+                          |                     |          
+                          |                      --0.54%--NJK::TStorage::TImpl::TDentry::LockGuard4
+                          |          
+                          |--40.06%--NJK::TStorage::TImpl::Set
+                          |          |          
+                          |          |--35.92%--NJK::TStorage::TImpl::ResolvePath
+                          |          |          |          
+                          |          |          |--28.73%--NJK::TStorage::TImpl::ResolveDirs
+                          |          |          |          |          
+                          |          |          |           --20.73%--NJK::TStorage::TImpl::StepPath
+                          |          |          |                     |          
+                          |          |          |                     |--10.56%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+                          |          |          |                     |          
+                          |          |          |                     |--3.32%--NJK::TStorage::TImpl::TDentry::LockGuard18
+                          |          |          |                     |          
+                          |          |          |                     |--1.99%--NJK::TStorage::TImpl::TDentry::LockChild
+                          |          |          |                     |          
+                          |          |          |                     |--1.05%--NJK::TStorage::TImpl::TDentry::WaitInitialized
+                          |          |          |                     |          
+                          |          |          |                      --0.87%--std::_Hash_bytes
+                          |          |          |          
+                          |          |           --4.48%--NJK::TStorage::TImpl::StepPath
+                          |          |                     |          
+                          |          |                     |--1.63%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+                          |          |                     |          
+                          |          |                      --0.51%--std::_Hash_bytes
+                          |          |          
+                          |          |--2.83%--NJK::TStorage::TImpl::TDentry::SetValue
+                          |          |          |          
+                          |          |          |--0.82%--NJK::TStorage::TImpl::TDentry::LockGuard7
+                          |          |          |          
+                          |          |           --0.56%--NJK::TStorage::TImpl::TDentry::LockGuard9
+                          |          |          
+                          |           --0.51%--__memmove_avx_unaligned_erms
+                          |          
+                           --13.10%--NJK::TStorage::Erase
+                                     |          
+                                     |--11.59%--NJK::TStorage::TImpl::ResolvePath
+                                     |          |          
+                                     |          |--8.90%--NJK::TStorage::TImpl::ResolveDirs
+                                     |          |          |          
+                                     |          |           --6.25%--NJK::TStorage::TImpl::StepPath
+                                     |          |                     |          
+                                     |          |                     |--3.18%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+                                     |          |                     |          
+                                     |          |                      --1.17%--NJK::TStorage::TImpl::TDentry::LockGuard18
+                                     |          |          
+                                     |           --1.68%--NJK::TStorage::TImpl::StepPath
+                                     |                     |          
+                                     |                      --0.74%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+                                     |          
+                                      --1.07%--NJK::TStorage::TImpl::TDentry::UnsetValue
+
+    98.92%     0.51%  a.out    a.out                [.] TestConcurrencyIncrement()::$_6::operator()
+            |          
+            |--98.42%--TestConcurrencyIncrement()::$_6::operator()
+            |          |          
+            |          |--44.91%--NJK::TStorage::Get
+            |          |          |          
+            |          |          |--40.27%--NJK::TStorage::TImpl::ResolvePath
+            |          |          |          |          
+            |          |          |          |--31.37%--NJK::TStorage::TImpl::ResolveDirs
+            |          |          |          |          |          
+            |          |          |          |           --22.52%--NJK::TStorage::TImpl::StepPath
+            |          |          |          |                     |          
+            |          |          |          |                     |--11.45%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+            |          |          |          |                     |          |          
+            |          |          |          |                     |           --0.50%--asm_sysvec_apic_timer_interrupt
+            |          |          |          |                     |                     sysvec_apic_timer_interrupt
+            |          |          |          |                     |          
+            |          |          |          |                     |--4.21%--NJK::TStorage::TImpl::TDentry::LockGuard18
+            |          |          |          |                     |          
+            |          |          |          |                     |--2.02%--NJK::TStorage::TImpl::TDentry::LockChild
+            |          |          |          |                     |          
+            |          |          |          |                     |--0.95%--NJK::TStorage::TImpl::TDentry::WaitInitialized
+            |          |          |          |                     |          
+            |          |          |          |                      --0.79%--std::_Hash_bytes
+            |          |          |          |          
+            |          |          |           --5.84%--NJK::TStorage::TImpl::StepPath
+            |          |          |                     |          
+            |          |          |                     |--2.62%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+            |          |          |                     |          
+            |          |          |                     |--0.66%--NJK::TStorage::TImpl::TDentry::LockGuard18
+            |          |          |                     |          
+            |          |          |                     |--0.57%--std::_Hash_bytes
+            |          |          |                     |          
+            |          |          |                      --0.56%--NJK::TStorage::TImpl::TDentry::LockChild
+            |          |          |          
+            |          |           --3.21%--NJK::TStorage::TImpl::TDentry::GetValue[abi:cxx11]
+            |          |                     |          
+            |          |                     |--1.04%--NJK::TStorage::TImpl::TDentry::LockGuard11
+            |          |                     |          
+            |          |                     |--0.58%--NJK::TStorage::TImpl::TDentry::LockGuard5
+            |          |                     |          
+            |          |                      --0.54%--NJK::TStorage::TImpl::TDentry::LockGuard4
+            |          |          
+            |          |--40.06%--NJK::TStorage::TImpl::Set
+            |          |          |          
+            |          |          |--35.92%--NJK::TStorage::TImpl::ResolvePath
+            |          |          |          |          
+            |          |          |          |--28.73%--NJK::TStorage::TImpl::ResolveDirs
+            |          |          |          |          |          
+            |          |          |          |           --20.73%--NJK::TStorage::TImpl::StepPath
+            |          |          |          |                     |          
+            |          |          |          |                     |--10.56%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+            |          |          |          |                     |          
+            |          |          |          |                     |--3.32%--NJK::TStorage::TImpl::TDentry::LockGuard18
+            |          |          |          |                     |          
+            |          |          |          |                     |--1.99%--NJK::TStorage::TImpl::TDentry::LockChild
+            |          |          |          |                     |          
+            |          |          |          |                     |--1.05%--NJK::TStorage::TImpl::TDentry::WaitInitialized
+            |          |          |          |                     |          
+            |          |          |          |                      --0.87%--std::_Hash_bytes
+            |          |          |          |          
+            |          |          |           --4.48%--NJK::TStorage::TImpl::StepPath
+            |          |          |                     |          
+            |          |          |                     |--1.63%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+            |          |          |                     |          
+            |          |          |                      --0.51%--std::_Hash_bytes
+            |          |          |          
+            |          |          |--2.83%--NJK::TStorage::TImpl::TDentry::SetValue
+            |          |          |          |          
+            |          |          |          |--0.82%--NJK::TStorage::TImpl::TDentry::LockGuard7
+            |          |          |          |          
+            |          |          |           --0.56%--NJK::TStorage::TImpl::TDentry::LockGuard9
+            |          |          |          
+            |          |           --0.51%--__memmove_avx_unaligned_erms
+            |          |          
+            |           --13.10%--NJK::TStorage::Erase
+            |                     |          
+            |                     |--11.59%--NJK::TStorage::TImpl::ResolvePath
+            |                     |          |          
+            |                     |          |--8.90%--NJK::TStorage::TImpl::ResolveDirs
+            |                     |          |          |          
+            |                     |          |           --6.25%--NJK::TStorage::TImpl::StepPath
+            |                     |          |                     |          
+            |                     |          |                     |--3.18%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+            |                     |          |                     |          
+            |                     |          |                      --1.17%--NJK::TStorage::TImpl::TDentry::LockGuard18
+            |                     |          |          
+            |                     |           --1.68%--NJK::TStorage::TImpl::StepPath
+            |                     |                     |          
+            |                     |                      --0.74%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+            |                     |          
+            |                      --1.07%--NJK::TStorage::TImpl::TDentry::UnsetValue
+            |          
+             --0.51%--0xfffffdd0e9000000
+
+    88.12%     5.23%  a.out    a.out                [.] NJK::TStorage::TImpl::ResolvePath
+            |          
+            |--82.89%--NJK::TStorage::TImpl::ResolvePath
+            |          |          
+            |          |--69.01%--NJK::TStorage::TImpl::ResolveDirs
+            |          |          |          
+            |          |          |--49.50%--NJK::TStorage::TImpl::StepPath
+            |          |          |          |          
+            |          |          |          |--25.20%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+            |          |          |          |          |          
+            |          |          |          |           --0.99%--asm_sysvec_apic_timer_interrupt
+            |          |          |          |                     |          
+            |          |          |          |                      --0.98%--sysvec_apic_timer_interrupt
+            |          |          |          |                                |          
+            |          |          |          |                                 --0.97%--__sysvec_apic_timer_interrupt
+            |          |          |          |                                           hrtimer_interrupt
+            |          |          |          |          
+            |          |          |          |--8.70%--NJK::TStorage::TImpl::TDentry::LockGuard18
+            |          |          |          |          
+            |          |          |          |--4.49%--NJK::TStorage::TImpl::TDentry::LockChild
+            |          |          |          |          
+            |          |          |          |--2.22%--NJK::TStorage::TImpl::TDentry::WaitInitialized
+            |          |          |          |          
+            |          |          |          |--1.94%--std::_Hash_bytes
+            |          |          |          |          
+            |          |          |          |--0.99%--__memcmp_avx2_movbe
+            |          |          |          |          
+            |          |          |           --0.56%--__memmove_avx_unaligned_erms
+            |          |          |          
+            |          |           --1.08%--__memmove_avx_unaligned_erms
+            |          |          
+            |          |--12.00%--NJK::TStorage::TImpl::StepPath
+            |          |          |          
+            |          |          |--5.00%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+            |          |          |          
+            |          |          |--1.39%--NJK::TStorage::TImpl::TDentry::LockGuard18
+            |          |          |          
+            |          |          |--1.18%--std::_Hash_bytes
+            |          |          |          
+            |          |          |--1.11%--NJK::TStorage::TImpl::TDentry::LockChild
+            |          |          |          
+            |          |           --0.53%--__memcmp_avx2_movbe
+            |          |          
+            |           --0.78%--__memmove_avx_unaligned_erms
+            |          
+             --5.23%--0xfffffdd0e9000000
+                       |          
+                       |--1.80%--std::thread::_State_impl<std::thread::_Invoker<std::tuple<TestConcurrencyIncrement()::$_8> > >::~_State_impl
+                       |          0x7fff725b9e38
+                       |          0x7f1849b9ede4
+                       |          TestConcurrencyIncrement()::$_6::operator()
+                       |          |          
+                       |          |--0.89%--NJK::TStorage::TImpl::Set
+                       |          |          |          
+                       |          |           --0.87%--NJK::TStorage::TImpl::ResolvePath
+                       |          |          
+                       |           --0.85%--NJK::TStorage::Get
+                       |                     |          
+                       |                      --0.73%--NJK::TStorage::TImpl::ResolvePath
+                       |          
+                       |--1.75%--std::thread::_State_impl<std::thread::_Invoker<std::tuple<TestConcurrencyIncrement()::$_7> > >::~_State_impl
+                       |          0x7fff725b9e38
+                       |          0x7f1849b9ede4
+                       |          TestConcurrencyIncrement()::$_6::operator()
+                       |          |          
+                       |          |--0.77%--NJK::TStorage::Get
+                       |          |          NJK::TStorage::TImpl::ResolvePath
+                       |          |          
+                       |           --0.60%--NJK::TStorage::TImpl::Set
+                       |                     |          
+                       |                      --0.56%--NJK::TStorage::TImpl::ResolvePath
+                       |          
+                        --1.68%--std::thread::_State_impl<std::thread::_Invoker<std::tuple<TestConcurrencyIncrement()::$_9> > >::~_State_impl
+                                  0x7fff725b9e38
+                                  0x7f1849b9ede4
+                                  TestConcurrencyIncrement()::$_6::operator()
+                                  |          
+                                  |--0.72%--NJK::TStorage::Get
+                                  |          |          
+                                  |           --0.70%--NJK::TStorage::TImpl::ResolvePath
+                                  |          
+                                   --0.65%--NJK::TStorage::TImpl::Set
+                                             |          
+                                              --0.61%--NJK::TStorage::TImpl::ResolvePath
+
+    69.69%    17.46%  a.out    a.out                [.] NJK::TStorage::TImpl::ResolveDirs
+            |          
+            |--52.23%--NJK::TStorage::TImpl::ResolveDirs
+            |          |          
+            |          |--49.48%--NJK::TStorage::TImpl::StepPath
+            |          |          |          
+            |          |          |--25.19%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+            |          |          |          |          
+            |          |          |           --0.98%--asm_sysvec_apic_timer_interrupt
+            |          |          |                     sysvec_apic_timer_interrupt
+            |          |          |                     |          
+            |          |          |                      --0.97%--__sysvec_apic_timer_interrupt
+            |          |          |                                hrtimer_interrupt
+            |          |          |          
+            |          |          |--8.70%--NJK::TStorage::TImpl::TDentry::LockGuard18
+            |          |          |          
+            |          |          |--4.49%--NJK::TStorage::TImpl::TDentry::LockChild
+            |          |          |          
+            |          |          |--2.22%--NJK::TStorage::TImpl::TDentry::WaitInitialized
+            |          |          |          
+            |          |          |--1.94%--std::_Hash_bytes
+            |          |          |          
+            |          |          |--0.99%--__memcmp_avx2_movbe
+            |          |          |          
+            |          |           --0.56%--__memmove_avx_unaligned_erms
+            |          |          
+            |           --1.08%--__memmove_avx_unaligned_erms
+            |          
+             --17.46%--0xfffffdd0e9000000
+                       |          
+                       |--5.91%--std::thread::_State_impl<std::thread::_Invoker<std::tuple<TestConcurrencyIncrement()::$_9> > >::~_State_impl
+                       |          0x7fff725b9e38
+                       |          0x7f1849b9ede4
+                       |          TestConcurrencyIncrement()::$_6::operator()
+                       |          |          
+                       |          |--2.88%--NJK::TStorage::Get
+                       |          |          NJK::TStorage::TImpl::ResolvePath
+                       |          |          |          
+                       |          |           --2.81%--NJK::TStorage::TImpl::ResolveDirs
+                       |          |          
+                       |          |--2.34%--NJK::TStorage::TImpl::Set
+                       |          |          |          
+                       |          |           --2.32%--NJK::TStorage::TImpl::ResolvePath
+                       |          |                     |          
+                       |          |                      --2.30%--NJK::TStorage::TImpl::ResolveDirs
+                       |          |          
+                       |           --0.70%--NJK::TStorage::Erase
+                       |                     NJK::TStorage::TImpl::ResolvePath
+                       |                     |          
+                       |                      --0.68%--NJK::TStorage::TImpl::ResolveDirs
+                       |          
+                       |--5.79%--std::thread::_State_impl<std::thread::_Invoker<std::tuple<TestConcurrencyIncrement()::$_8> > >::~_State_impl
+                       |          0x7fff725b9e38
+                       |          0x7f1849b9ede4
+                       |          TestConcurrencyIncrement()::$_6::operator()
+                       |          |          
+                       |          |--2.74%--NJK::TStorage::Get
+                       |          |          NJK::TStorage::TImpl::ResolvePath
+                       |          |          |          
+                       |          |           --2.63%--NJK::TStorage::TImpl::ResolveDirs
+                       |          |          
+                       |           --2.56%--NJK::TStorage::TImpl::Set
+                       |                     |          
+                       |                      --2.55%--NJK::TStorage::TImpl::ResolvePath
+                       |                                |          
+                       |                                 --2.45%--NJK::TStorage::TImpl::ResolveDirs
+                       |          
+                        --5.76%--std::thread::_State_impl<std::thread::_Invoker<std::tuple<TestConcurrencyIncrement()::$_7> > >::~_State_impl
+                                  0x7fff725b9e38
+                                  0x7f1849b9ede4
+                                  TestConcurrencyIncrement()::$_6::operator()
+                                  |          
+                                  |--2.40%--NJK::TStorage::Get
+                                  |          NJK::TStorage::TImpl::ResolvePath
+                                  |          |          
+                                  |           --2.31%--NJK::TStorage::TImpl::ResolveDirs
+                                  |          
+                                  |--2.20%--NJK::TStorage::TImpl::Set
+                                  |          |          
+                                  |           --2.19%--NJK::TStorage::TImpl::ResolvePath
+                                  |                     |          
+                                  |                      --2.09%--NJK::TStorage::TImpl::ResolveDirs
+                                  |          
+                                   --1.16%--NJK::TStorage::Erase
+                                             NJK::TStorage::TImpl::ResolvePath
+                                             |          
+                                              --1.10%--NJK::TStorage::TImpl::ResolveDirs
+
+    62.96%     6.63%  a.out    a.out                [.] NJK::TStorage::TImpl::StepPath
+            |          
+            |--56.32%--NJK::TStorage::TImpl::StepPath
+            |          |          
+            |          |--30.20%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+            |          |          |          
+            |          |           --1.17%--asm_sysvec_apic_timer_interrupt
+            |          |                     |          
+            |          |                      --1.16%--sysvec_apic_timer_interrupt
+            |          |                                |          
+            |          |                                 --1.15%--__sysvec_apic_timer_interrupt
+            |          |                                           hrtimer_interrupt
+            |          |          
+            |          |--10.09%--NJK::TStorage::TImpl::TDentry::LockGuard18
+            |          |          
+            |          |--5.59%--NJK::TStorage::TImpl::TDentry::LockChild
+            |          |          
+            |          |--3.13%--std::_Hash_bytes
+            |          |          
+            |          |--2.45%--NJK::TStorage::TImpl::TDentry::WaitInitialized
+            |          |          
+            |          |--1.52%--__memcmp_avx2_movbe
+            |          |          
+            |           --0.72%--__memmove_avx_unaligned_erms
+            |          
+             --6.63%--0xfffffdd0e9000000
+                       |          
+                       |--2.54%--std::thread::_State_impl<std::thread::_Invoker<std::tuple<TestConcurrencyIncrement()::$_9> > >::~_State_impl
+                       |          0x7fff725b9e38
+                       |          0x7f1849b9ede4
+                       |          TestConcurrencyIncrement()::$_6::operator()
+                       |          |          
+                       |          |--1.19%--NJK::TStorage::TImpl::Set
+                       |          |          NJK::TStorage::TImpl::ResolvePath
+                       |          |          |          
+                       |          |           --0.84%--NJK::TStorage::TImpl::ResolveDirs
+                       |          |                     |          
+                       |          |                      --0.71%--NJK::TStorage::TImpl::StepPath
+                       |          |          
+                       |           --1.05%--NJK::TStorage::Get
+                       |                     NJK::TStorage::TImpl::ResolvePath
+                       |                     |          
+                       |                      --0.77%--NJK::TStorage::TImpl::ResolveDirs
+                       |                                |          
+                       |                                 --0.62%--NJK::TStorage::TImpl::StepPath
+                       |          
+                       |--2.06%--std::thread::_State_impl<std::thread::_Invoker<std::tuple<TestConcurrencyIncrement()::$_8> > >::~_State_impl
+                       |          0x7fff725b9e38
+                       |          0x7f1849b9ede4
+                       |          TestConcurrencyIncrement()::$_6::operator()
+                       |          |          
+                       |          |--1.06%--NJK::TStorage::Get
+                       |          |          NJK::TStorage::TImpl::ResolvePath
+                       |          |          |          
+                       |          |           --0.72%--NJK::TStorage::TImpl::ResolveDirs
+                       |          |                     |          
+                       |          |                      --0.58%--NJK::TStorage::TImpl::StepPath
+                       |          |          
+                       |           --0.80%--NJK::TStorage::TImpl::Set
+                       |                     NJK::TStorage::TImpl::ResolvePath
+                       |                     |          
+                       |                      --0.61%--NJK::TStorage::TImpl::ResolveDirs
+                       |          
+                        --2.04%--std::thread::_State_impl<std::thread::_Invoker<std::tuple<TestConcurrencyIncrement()::$_7> > >::~_State_impl
+                                  0x7fff725b9e38
+                                  0x7f1849b9ede4
+                                  TestConcurrencyIncrement()::$_6::operator()
+                                  |          
+                                  |--0.85%--NJK::TStorage::TImpl::Set
+                                  |          NJK::TStorage::TImpl::ResolvePath
+                                  |          |          
+                                  |           --0.56%--NJK::TStorage::TImpl::ResolveDirs
+                                  |          
+                                   --0.76%--NJK::TStorage::Get
+                                             NJK::TStorage::TImpl::ResolvePath
+                                             |          
+                                              --0.58%--NJK::TStorage::TImpl::ResolveDirs
+
+    44.98%     0.72%  a.out    a.out                [.] NJK::TStorage::Get
+            |          
+            |--44.26%--NJK::TStorage::Get
+            |          |          
+            |          |--40.27%--NJK::TStorage::TImpl::ResolvePath
+            |          |          |          
+            |          |          |--31.37%--NJK::TStorage::TImpl::ResolveDirs
+            |          |          |          |          
+            |          |          |           --22.52%--NJK::TStorage::TImpl::StepPath
+            |          |          |                     |          
+            |          |          |                     |--11.45%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+            |          |          |                     |          |          
+            |          |          |                     |           --0.50%--asm_sysvec_apic_timer_interrupt
+            |          |          |                     |                     sysvec_apic_timer_interrupt
+            |          |          |                     |          
+            |          |          |                     |--4.21%--NJK::TStorage::TImpl::TDentry::LockGuard18
+            |          |          |                     |          
+            |          |          |                     |--2.02%--NJK::TStorage::TImpl::TDentry::LockChild
+            |          |          |                     |          
+            |          |          |                     |--0.95%--NJK::TStorage::TImpl::TDentry::WaitInitialized
+            |          |          |                     |          
+            |          |          |                      --0.79%--std::_Hash_bytes
+            |          |          |          
+            |          |           --5.84%--NJK::TStorage::TImpl::StepPath
+            |          |                     |          
+            |          |                     |--2.62%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+            |          |                     |          
+            |          |                     |--0.66%--NJK::TStorage::TImpl::TDentry::LockGuard18
+            |          |                     |          
+            |          |                     |--0.57%--std::_Hash_bytes
+            |          |                     |          
+            |          |                      --0.56%--NJK::TStorage::TImpl::TDentry::LockChild
+            |          |          
+            |           --3.21%--NJK::TStorage::TImpl::TDentry::GetValue[abi:cxx11]
+            |                     |          
+            |                     |--1.04%--NJK::TStorage::TImpl::TDentry::LockGuard11
+            |                     |          
+            |                     |--0.58%--NJK::TStorage::TImpl::TDentry::LockGuard5
+            |                     |          
+            |                      --0.54%--NJK::TStorage::TImpl::TDentry::LockGuard4
+            |          
+             --0.72%--0xfffffdd0e9000000
+
+    40.15%     0.54%  a.out    a.out                [.] NJK::TStorage::TImpl::Set
+            |          
+            |--39.61%--NJK::TStorage::TImpl::Set
+            |          |          
+            |          |--35.92%--NJK::TStorage::TImpl::ResolvePath
+            |          |          |          
+            |          |          |--28.73%--NJK::TStorage::TImpl::ResolveDirs
+            |          |          |          |          
+            |          |          |           --20.73%--NJK::TStorage::TImpl::StepPath
+            |          |          |                     |          
+            |          |          |                     |--10.56%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+            |          |          |                     |          
+            |          |          |                     |--3.32%--NJK::TStorage::TImpl::TDentry::LockGuard18
+            |          |          |                     |          
+            |          |          |                     |--1.99%--NJK::TStorage::TImpl::TDentry::LockChild
+            |          |          |                     |          
+            |          |          |                     |--1.05%--NJK::TStorage::TImpl::TDentry::WaitInitialized
+            |          |          |                     |          
+            |          |          |                      --0.87%--std::_Hash_bytes
+            |          |          |          
+            |          |           --4.48%--NJK::TStorage::TImpl::StepPath
+            |          |                     |          
+            |          |                     |--1.63%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+            |          |                     |          
+            |          |                      --0.51%--std::_Hash_bytes
+            |          |          
+            |          |--2.83%--NJK::TStorage::TImpl::TDentry::SetValue
+            |          |          |          
+            |          |          |--0.82%--NJK::TStorage::TImpl::TDentry::LockGuard7
+            |          |          |          
+            |          |           --0.56%--NJK::TStorage::TImpl::TDentry::LockGuard9
+            |          |          
+            |           --0.51%--__memmove_avx_unaligned_erms
+            |          
+             --0.54%--0xfffffdd0e9000000
+
+    33.77%     0.00%  a.out    a.out                [.] std::thread::_State_impl<std::thread::_Invoker<std::tuple<TestConcurrencyIncrement()::$_8> > >::~_State_impl
+            |
+            ---std::thread::_State_impl<std::thread::_Invoker<std::tuple<TestConcurrencyIncrement()::$_8> > >::~_State_impl
+               0x7fff725b9e38
+               0x7f1849b9ede4
+               |          
+                --33.67%--TestConcurrencyIncrement()::$_6::operator()
+                          |          
+                          |--16.23%--NJK::TStorage::Get
+                          |          |          
+                          |          |--14.42%--NJK::TStorage::TImpl::ResolvePath
+                          |          |          |          
+                          |          |          |--11.02%--NJK::TStorage::TImpl::ResolveDirs
+                          |          |          |          |          
+                          |          |          |           --8.06%--NJK::TStorage::TImpl::StepPath
+                          |          |          |                     |          
+                          |          |          |                     |--4.09%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+                          |          |          |                     |          
+                          |          |          |                     |--1.45%--NJK::TStorage::TImpl::TDentry::LockGuard18
+                          |          |          |                     |          
+                          |          |          |                      --0.76%--NJK::TStorage::TImpl::TDentry::LockChild
+                          |          |          |          
+                          |          |           --2.20%--NJK::TStorage::TImpl::StepPath
+                          |          |                     |          
+                          |          |                      --0.98%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+                          |          |          
+                          |           --1.21%--NJK::TStorage::TImpl::TDentry::GetValue[abi:cxx11]
+                          |          
+                          |--14.22%--NJK::TStorage::TImpl::Set
+                          |          |          
+                          |          |--12.74%--NJK::TStorage::TImpl::ResolvePath
+                          |          |          |          
+                          |          |          |--10.20%--NJK::TStorage::TImpl::ResolveDirs
+                          |          |          |          |          
+                          |          |          |           --7.34%--NJK::TStorage::TImpl::StepPath
+                          |          |          |                     |          
+                          |          |          |                     |--3.65%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+                          |          |          |                     |          
+                          |          |          |                     |--1.18%--NJK::TStorage::TImpl::TDentry::LockGuard18
+                          |          |          |                     |          
+                          |          |          |                     |--0.75%--NJK::TStorage::TImpl::TDentry::LockChild
+                          |          |          |                     |          
+                          |          |          |                      --0.54%--NJK::TStorage::TImpl::TDentry::WaitInitialized
+                          |          |          |          
+                          |          |           --1.50%--NJK::TStorage::TImpl::StepPath
+                          |          |          
+                          |           --0.96%--NJK::TStorage::TImpl::TDentry::SetValue
+                          |          
+                           --2.96%--NJK::TStorage::Erase
+                                     |          
+                                      --2.59%--NJK::TStorage::TImpl::ResolvePath
+                                                |          
+                                                 --2.00%--NJK::TStorage::TImpl::ResolveDirs
+                                                           |          
+                                                            --1.44%--NJK::TStorage::TImpl::StepPath
+                                                                      |          
+                                                                       --0.79%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+
+    33.37%     0.00%  a.out    a.out                [.] std::thread::_State_impl<std::thread::_Invoker<std::tuple<TestConcurrencyIncrement()::$_9> > >::~_State_impl
+            |
+            ---std::thread::_State_impl<std::thread::_Invoker<std::tuple<TestConcurrencyIncrement()::$_9> > >::~_State_impl
+               0x7fff725b9e38
+               0x7f1849b9ede4
+               |          
+                --33.35%--TestConcurrencyIncrement()::$_6::operator()
+                          |          
+                          |--15.35%--NJK::TStorage::Get
+                          |          |          
+                          |          |--13.94%--NJK::TStorage::TImpl::ResolvePath
+                          |          |          |          
+                          |          |          |--11.02%--NJK::TStorage::TImpl::ResolveDirs
+                          |          |          |          |          
+                          |          |          |           --7.83%--NJK::TStorage::TImpl::StepPath
+                          |          |          |                     |          
+                          |          |          |                     |--3.80%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+                          |          |          |                     |          
+                          |          |          |                     |--1.67%--NJK::TStorage::TImpl::TDentry::LockGuard18
+                          |          |          |                     |          
+                          |          |          |                      --0.66%--NJK::TStorage::TImpl::TDentry::LockChild
+                          |          |          |          
+                          |          |           --2.01%--NJK::TStorage::TImpl::StepPath
+                          |          |                     |          
+                          |          |                      --0.81%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+                          |          |          
+                          |           --1.04%--NJK::TStorage::TImpl::TDentry::GetValue[abi:cxx11]
+                          |          
+                          |--13.80%--NJK::TStorage::TImpl::Set
+                          |          |          
+                          |          |--12.46%--NJK::TStorage::TImpl::ResolvePath
+                          |          |          |          
+                          |          |          |--9.97%--NJK::TStorage::TImpl::ResolveDirs
+                          |          |          |          |          
+                          |          |          |           --7.30%--NJK::TStorage::TImpl::StepPath
+                          |          |          |                     |          
+                          |          |          |                     |--3.56%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+                          |          |          |                     |          
+                          |          |          |                     |--1.15%--NJK::TStorage::TImpl::TDentry::LockGuard18
+                          |          |          |                     |          
+                          |          |          |                      --0.72%--NJK::TStorage::TImpl::TDentry::LockChild
+                          |          |          |          
+                          |          |           --1.63%--NJK::TStorage::TImpl::StepPath
+                          |          |                     |          
+                          |          |                      --0.63%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+                          |          |          
+                          |           --0.93%--NJK::TStorage::TImpl::TDentry::SetValue
+                          |          
+                           --3.98%--NJK::TStorage::Erase
+                                     |          
+                                      --3.60%--NJK::TStorage::TImpl::ResolvePath
+                                                |          
+                                                |--2.62%--NJK::TStorage::TImpl::ResolveDirs
+                                                |          |          
+                                                |           --1.84%--NJK::TStorage::TImpl::StepPath
+                                                |                     |          
+                                                |                      --0.88%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+                                                |          
+                                                 --0.57%--NJK::TStorage::TImpl::StepPath
+
+    31.86%     0.00%  a.out    a.out                [.] std::thread::_State_impl<std::thread::_Invoker<std::tuple<TestConcurrencyIncrement()::$_7> > >::~_State_impl
+            |
+            ---std::thread::_State_impl<std::thread::_Invoker<std::tuple<TestConcurrencyIncrement()::$_7> > >::~_State_impl
+               0x7fff725b9e38
+               0x7f1849b9ede4
+               |          
+                --31.80%--TestConcurrencyIncrement()::$_6::operator()
+                          |          
+                          |--13.34%--NJK::TStorage::Get
+                          |          |          
+                          |          |--11.92%--NJK::TStorage::TImpl::ResolvePath
+                          |          |          |          
+                          |          |          |--9.34%--NJK::TStorage::TImpl::ResolveDirs
+                          |          |          |          |          
+                          |          |          |           --6.63%--NJK::TStorage::TImpl::StepPath
+                          |          |          |                     |          
+                          |          |          |                     |--3.56%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+                          |          |          |                     |          
+                          |          |          |                     |--1.09%--NJK::TStorage::TImpl::TDentry::LockGuard18
+                          |          |          |                     |          
+                          |          |          |                      --0.60%--NJK::TStorage::TImpl::TDentry::LockChild
+                          |          |          |          
+                          |          |           --1.64%--NJK::TStorage::TImpl::StepPath
+                          |          |                     |          
+                          |          |                      --0.83%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+                          |          |          
+                          |           --0.97%--NJK::TStorage::TImpl::TDentry::GetValue[abi:cxx11]
+                          |          
+                          |--12.03%--NJK::TStorage::TImpl::Set
+                          |          |          
+                          |          |--10.72%--NJK::TStorage::TImpl::ResolvePath
+                          |          |          |          
+                          |          |          |--8.55%--NJK::TStorage::TImpl::ResolveDirs
+                          |          |          |          |          
+                          |          |          |           --6.09%--NJK::TStorage::TImpl::StepPath
+                          |          |          |                     |          
+                          |          |          |                     |--3.35%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+                          |          |          |                     |          
+                          |          |          |                     |--0.99%--NJK::TStorage::TImpl::TDentry::LockGuard18
+                          |          |          |                     |          
+                          |          |          |                      --0.51%--NJK::TStorage::TImpl::TDentry::LockChild
+                          |          |          |          
+                          |          |           --1.35%--NJK::TStorage::TImpl::StepPath
+                          |          |                     |          
+                          |          |                      --0.55%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+                          |          |          
+                          |           --0.94%--NJK::TStorage::TImpl::TDentry::SetValue
+                          |          
+                           --6.16%--NJK::TStorage::Erase
+                                     |          
+                                     |--5.39%--NJK::TStorage::TImpl::ResolvePath
+                                     |          |          
+                                     |          |--4.28%--NJK::TStorage::TImpl::ResolveDirs
+                                     |          |          |          
+                                     |          |           --2.97%--NJK::TStorage::TImpl::StepPath
+                                     |          |                     |          
+                                     |          |                     |--1.51%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+                                     |          |                     |          
+                                     |          |                      --0.59%--NJK::TStorage::TImpl::TDentry::LockGuard18
+                                     |          |          
+                                     |           --0.65%--NJK::TStorage::TImpl::StepPath
+                                     |          
+                                      --0.53%--NJK::TStorage::TImpl::TDentry::UnsetValue
+
+    31.31%    29.60%  a.out    a.out                [.] NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+            |          
+            |--29.60%--0xfffffdd0e9000000
+            |          |          
+            |          |--10.06%--std::thread::_State_impl<std::thread::_Invoker<std::tuple<TestConcurrencyIncrement()::$_7> > >::~_State_impl
+            |          |          0x7fff725b9e38
+            |          |          0x7f1849b9ede4
+            |          |          TestConcurrencyIncrement()::$_6::operator()
+            |          |          |          
+            |          |          |--4.31%--NJK::TStorage::Get
+            |          |          |          NJK::TStorage::TImpl::ResolvePath
+            |          |          |          |          
+            |          |          |          |--3.44%--NJK::TStorage::TImpl::ResolveDirs
+            |          |          |          |          NJK::TStorage::TImpl::StepPath
+            |          |          |          |          |          
+            |          |          |          |           --3.39%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+            |          |          |          |          
+            |          |          |           --0.87%--NJK::TStorage::TImpl::StepPath
+            |          |          |                     |          
+            |          |          |                      --0.80%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+            |          |          |          
+            |          |          |--3.94%--NJK::TStorage::TImpl::Set
+            |          |          |          NJK::TStorage::TImpl::ResolvePath
+            |          |          |          |          
+            |          |          |          |--3.34%--NJK::TStorage::TImpl::ResolveDirs
+            |          |          |          |          |          
+            |          |          |          |           --3.33%--NJK::TStorage::TImpl::StepPath
+            |          |          |          |                     |          
+            |          |          |          |                      --3.28%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+            |          |          |          |          
+            |          |          |           --0.60%--NJK::TStorage::TImpl::StepPath
+            |          |          |                     |          
+            |          |          |                      --0.54%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+            |          |          |          
+            |          |           --1.82%--NJK::TStorage::Erase
+            |          |                     NJK::TStorage::TImpl::ResolvePath
+            |          |                     |          
+            |          |                      --1.51%--NJK::TStorage::TImpl::ResolveDirs
+            |          |                                NJK::TStorage::TImpl::StepPath
+            |          |                                |          
+            |          |                                 --1.46%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+            |          |          
+            |          |--9.79%--std::thread::_State_impl<std::thread::_Invoker<std::tuple<TestConcurrencyIncrement()::$_9> > >::~_State_impl
+            |          |          0x7fff725b9e38
+            |          |          0x7f1849b9ede4
+            |          |          TestConcurrencyIncrement()::$_6::operator()
+            |          |          |          
+            |          |          |--4.54%--NJK::TStorage::Get
+            |          |          |          NJK::TStorage::TImpl::ResolvePath
+            |          |          |          |          
+            |          |          |          |--3.72%--NJK::TStorage::TImpl::ResolveDirs
+            |          |          |          |          NJK::TStorage::TImpl::StepPath
+            |          |          |          |          |          
+            |          |          |          |           --3.61%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+            |          |          |          |          
+            |          |          |           --0.82%--NJK::TStorage::TImpl::StepPath
+            |          |          |                     |          
+            |          |          |                      --0.78%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+            |          |          |          
+            |          |          |--4.16%--NJK::TStorage::TImpl::Set
+            |          |          |          NJK::TStorage::TImpl::ResolvePath
+            |          |          |          |          
+            |          |          |          |--3.51%--NJK::TStorage::TImpl::ResolveDirs
+            |          |          |          |          NJK::TStorage::TImpl::StepPath
+            |          |          |          |          |          
+            |          |          |          |           --3.40%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+            |          |          |          |          
+            |          |          |           --0.65%--NJK::TStorage::TImpl::StepPath
+            |          |          |                     |          
+            |          |          |                      --0.60%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+            |          |          |          
+            |          |           --1.09%--NJK::TStorage::Erase
+            |          |                     NJK::TStorage::TImpl::ResolvePath
+            |          |                     |          
+            |          |                      --0.85%--NJK::TStorage::TImpl::ResolveDirs
+            |          |                                NJK::TStorage::TImpl::StepPath
+            |          |                                |          
+            |          |                                 --0.83%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+            |          |          
+            |           --9.75%--std::thread::_State_impl<std::thread::_Invoker<std::tuple<TestConcurrencyIncrement()::$_8> > >::~_State_impl
+            |                     0x7fff725b9e38
+            |                     0x7f1849b9ede4
+            |                     TestConcurrencyIncrement()::$_6::operator()
+            |                     |          
+            |                     |--4.84%--NJK::TStorage::Get
+            |                     |          NJK::TStorage::TImpl::ResolvePath
+            |                     |          |          
+            |                     |          |--3.88%--NJK::TStorage::TImpl::ResolveDirs
+            |                     |          |          NJK::TStorage::TImpl::StepPath
+            |                     |          |          |          
+            |                     |          |           --3.83%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+            |                     |          |          
+            |                     |           --0.95%--NJK::TStorage::TImpl::StepPath
+            |                     |                     |          
+            |                     |                      --0.92%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+            |                     |          
+            |                     |--3.93%--NJK::TStorage::TImpl::Set
+            |                     |          NJK::TStorage::TImpl::ResolvePath
+            |                     |          |          
+            |                     |           --3.50%--NJK::TStorage::TImpl::ResolveDirs
+            |                     |                     NJK::TStorage::TImpl::StepPath
+            |                     |                     |          
+            |                     |                      --3.42%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+            |                     |          
+            |                      --0.98%--NJK::TStorage::Erase
+            |                                NJK::TStorage::TImpl::ResolvePath
+            |                                |          
+            |                                 --0.78%--NJK::TStorage::TImpl::ResolveDirs
+            |                                           NJK::TStorage::TImpl::StepPath
+            |                                           |          
+            |                                            --0.77%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+            |          
+             --1.71%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+                       |          
+                        --1.17%--asm_sysvec_apic_timer_interrupt
+                                  |          
+                                   --1.16%--sysvec_apic_timer_interrupt
+                                             |          
+                                              --1.15%--__sysvec_apic_timer_interrupt
+                                                        hrtimer_interrupt
+
+    13.12%     0.11%  a.out    a.out                [.] NJK::TStorage::Erase
+            |          
+             --13.01%--NJK::TStorage::Erase
+                       |          
+                       |--11.59%--NJK::TStorage::TImpl::ResolvePath
+                       |          |          
+                       |          |--8.90%--NJK::TStorage::TImpl::ResolveDirs
+                       |          |          |          
+                       |          |           --6.25%--NJK::TStorage::TImpl::StepPath
+                       |          |                     |          
+                       |          |                     |--3.18%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+                       |          |                     |          
+                       |          |                      --1.17%--NJK::TStorage::TImpl::TDentry::LockGuard18
+                       |          |          
+                       |           --1.68%--NJK::TStorage::TImpl::StepPath
+                       |                     |          
+                       |                      --0.74%--NJK::THashMap<NJK::TStorage::TImpl::TDentryCacheKey, NJK::TStorage::TImpl::TDentry, NJK::TStorage::TImpl::TDentryKeyHash, NJK::TNaiveSpinLock>::Lookup
+                       |          
+                        --1.07%--NJK::TStorage::TImpl::TDentry::UnsetValue
+
+    10.53%     9.94%  a.out    a.out                [.] NJK::TStorage::TImpl::TDentry::LockGuard18
+            |          
+            |--9.94%--0xfffffdd0e9000000
+            |          |          
+            |          |--3.60%--std::thread::_State_impl<std::thread::_Invoker<std::tuple<TestConcurrencyIncrement()::$_9> > >::~_State_impl
+            |          |          0x7fff725b9e38
+            |          |          0x7f1849b9ede4
+            |          |          TestConcurrencyIncrement()::$_6::operator()
+            |          |          |          
+            |          |          |--1.90%--NJK::TStorage::Get
+            |          |          |          NJK::TStorage::TImpl::ResolvePath
+            |          |          |          |          
+            |          |          |           --1.63%--NJK::TStorage::TImpl::ResolveDirs
+            |          |          |                     NJK::TStorage::TImpl::StepPath
+            |          |          |                     |          
+            |          |          |                      --1.59%--NJK::TStorage::TImpl::TDentry::LockGuard18
+            |          |          |          
+            |          |           --1.33%--NJK::TStorage::TImpl::Set
+            |          |                     NJK::TStorage::TImpl::ResolvePath
+            |          |                     |          
+            |          |                      --1.13%--NJK::TStorage::TImpl::ResolveDirs
+            |          |                                NJK::TStorage::TImpl::StepPath
+            |          |                                |          
+            |          |                                 --1.09%--NJK::TStorage::TImpl::TDentry::LockGuard18
+            |          |          
+            |          |--3.45%--std::thread::_State_impl<std::thread::_Invoker<std::tuple<TestConcurrencyIncrement()::$_8> > >::~_State_impl
+            |          |          0x7fff725b9e38
+            |          |          0x7f1849b9ede4
+            |          |          TestConcurrencyIncrement()::$_6::operator()
+            |          |          |          
+            |          |          |--1.70%--NJK::TStorage::Get
+            |          |          |          NJK::TStorage::TImpl::ResolvePath
+            |          |          |          |          
+            |          |          |           --1.44%--NJK::TStorage::TImpl::ResolveDirs
+            |          |          |                     NJK::TStorage::TImpl::StepPath
+            |          |          |                     |          
+            |          |          |                      --1.42%--NJK::TStorage::TImpl::TDentry::LockGuard18
+            |          |          |          
+            |          |           --1.38%--NJK::TStorage::TImpl::Set
+            |          |                     NJK::TStorage::TImpl::ResolvePath
+            |          |                     |          
+            |          |                      --1.18%--NJK::TStorage::TImpl::ResolveDirs
+            |          |                                NJK::TStorage::TImpl::StepPath
+            |          |                                |          
+            |          |                                 --1.14%--NJK::TStorage::TImpl::TDentry::LockGuard18
+            |          |          
+            |           --2.89%--std::thread::_State_impl<std::thread::_Invoker<std::tuple<TestConcurrencyIncrement()::$_7> > >::~_State_impl
+            |                     0x7fff725b9e38
+            |                     0x7f1849b9ede4
+            |                     TestConcurrencyIncrement()::$_6::operator()
+            |                     |          
+            |                     |--1.18%--NJK::TStorage::Get
+            |                     |          NJK::TStorage::TImpl::ResolvePath
+            |                     |          |          
+            |                     |           --1.07%--NJK::TStorage::TImpl::ResolveDirs
+            |                     |                     NJK::TStorage::TImpl::StepPath
+            |                     |                     NJK::TStorage::TImpl::TDentry::LockGuard18
+            |                     |          
+            |                     |--1.06%--NJK::TStorage::TImpl::Set
+            |                     |          NJK::TStorage::TImpl::ResolvePath
+            |                     |          |          
+            |                     |           --0.98%--NJK::TStorage::TImpl::ResolveDirs
+            |                     |                     NJK::TStorage::TImpl::StepPath
+            |                     |                     |          
+            |                     |                      --0.94%--NJK::TStorage::TImpl::TDentry::LockGuard18
+            |                     |          
+            |                      --0.66%--NJK::TStorage::Erase
+            |                                NJK::TStorage::TImpl::ResolvePath
+            |                                |          
+            |                                 --0.59%--NJK::TStorage::TImpl::ResolveDirs
+            |                                           NJK::TStorage::TImpl::StepPath
+            |                                           NJK::TStorage::TImpl::TDentry::LockGuard18
+            |          
+             --0.59%--NJK::TStorage::TImpl::TDentry::LockGuard18
+
+     6.46%     5.84%  a.out    a.out                [.] NJK::TStorage::TImpl::TDentry::LockChild
+            |          
+            |--5.84%--0xfffffdd0e9000000
+            |          |          
+            |          |--2.10%--std::thread::_State_impl<std::thread::_Invoker<std::tuple<TestConcurrencyIncrement()::$_8> > >::~_State_impl
+            |          |          0x7fff725b9e38
+            |          |          0x7f1849b9ede4
+            |          |          TestConcurrencyIncrement()::$_6::operator()
+            |          |          |          
+            |          |          |--1.03%--NJK::TStorage::Get
+            |          |          |          NJK::TStorage::TImpl::ResolvePath
+            |          |          |          |          
+            |          |          |           --0.82%--NJK::TStorage::TImpl::ResolveDirs
+            |          |          |                     |          
+            |          |          |                      --0.81%--NJK::TStorage::TImpl::StepPath
+            |          |          |                                |          
+            |          |          |                                 --0.74%--NJK::TStorage::TImpl::TDentry::LockChild
+            |          |          |          
+            |          |           --0.97%--NJK::TStorage::TImpl::Set
+            |          |                     NJK::TStorage::TImpl::ResolvePath
+            |          |                     |          
+            |          |                      --0.80%--NJK::TStorage::TImpl::ResolveDirs
+            |          |                                |          
+            |          |                                 --0.79%--NJK::TStorage::TImpl::StepPath
+            |          |                                           |          
+            |          |                                            --0.71%--NJK::TStorage::TImpl::TDentry::LockChild
+            |          |          
+            |          |--2.08%--std::thread::_State_impl<std::thread::_Invoker<std::tuple<TestConcurrencyIncrement()::$_9> > >::~_State_impl
+            |          |          0x7fff725b9e38
+            |          |          0x7f1849b9ede4
+            |          |          TestConcurrencyIncrement()::$_6::operator()
+            |          |          |          
+            |          |          |--0.96%--NJK::TStorage::Get
+            |          |          |          NJK::TStorage::TImpl::ResolvePath
+            |          |          |          |          
+            |          |          |           --0.73%--NJK::TStorage::TImpl::ResolveDirs
+            |          |          |                     NJK::TStorage::TImpl::StepPath
+            |          |          |                     |          
+            |          |          |                      --0.63%--NJK::TStorage::TImpl::TDentry::LockChild
+            |          |          |          
+            |          |           --0.87%--NJK::TStorage::TImpl::Set
+            |          |                     NJK::TStorage::TImpl::ResolvePath
+            |          |                     |          
+            |          |                      --0.72%--NJK::TStorage::TImpl::ResolveDirs
+            |          |                                NJK::TStorage::TImpl::StepPath
+            |          |                                |          
+            |          |                                 --0.68%--NJK::TStorage::TImpl::TDentry::LockChild
+            |          |          
+            |           --1.66%--std::thread::_State_impl<std::thread::_Invoker<std::tuple<TestConcurrencyIncrement()::$_7> > >::~_State_impl
+            |                     0x7fff725b9e38
+            |                     0x7f1849b9ede4
+            |                     TestConcurrencyIncrement()::$_6::operator()
+            |                     |          
+            |                     |--0.74%--NJK::TStorage::Get
+            |                     |          NJK::TStorage::TImpl::ResolvePath
+            |                     |          |          
+            |                     |           --0.63%--NJK::TStorage::TImpl::ResolveDirs
+            |                     |                     NJK::TStorage::TImpl::StepPath
+            |                     |                     |          
+            |                     |                      --0.58%--NJK::TStorage::TImpl::TDentry::LockChild
+            |                     |          
+            |                      --0.63%--NJK::TStorage::TImpl::Set
+            |                                NJK::TStorage::TImpl::ResolvePath
+            |                                |          
+            |                                 --0.51%--NJK::TStorage::TImpl::ResolveDirs
+            |                                           NJK::TStorage::TImpl::StepPath
+            |          
+             --0.62%--NJK::TStorage::TImpl::TDentry::LockChild
+
+     4.11%     3.33%  a.out    libc-2.31.so         [.] __memmove_avx_unaligned_erms
+            |          
+            |--3.32%--0xfffffdd0e9000000
+            |          |          
+            |          |--1.33%--std::thread::_State_impl<std::thread::_Invoker<std::tuple<TestConcurrencyIncrement()::$_8> > >::~_State_impl
+            |          |          0x7fff725b9e38
+            |          |          0x7f1849b9ede4
+            |          |          TestConcurrencyIncrement()::$_6::operator()
+            |          |          |          
+            |          |          |--0.60%--NJK::TStorage::TImpl::Set
+            |          |          |          
+            |          |           --0.60%--NJK::TStorage::Get
+            |          |          
+            |          |--1.07%--std::thread::_State_impl<std::thread::_Invoker<std::tuple<TestConcurrencyIncrement()::$_7> > >::~_State_impl
+            |          |          0x7fff725b9e38
+            |          |          0x7f1849b9ede4
+            |          |          TestConcurrencyIncrement()::$_6::operator()
+            |          |          
+            |           --0.92%--std::thread::_State_impl<std::thread::_Invoker<std::tuple<TestConcurrencyIncrement()::$_9> > >::~_State_impl
+            |                     0x7fff725b9e38
+            |                     0x7f1849b9ede4
+            |                     TestConcurrencyIncrement()::$_6::operator()
+            |          
+             --0.78%--__memmove_avx_unaligned_erms
+
+     3.72%     3.72%  a.out    [kernel.kallsyms]    [k] read_hpet
+            |          
+            |--3.08%--0xfffffdd0e9000000
+            |          |          
+            |          |--1.07%--std::thread::_State_impl<std::thread::_Invoker<std::tuple<TestConcurrencyIncrement()::$_9> > >::~_State_impl
+            |          |          0x7fff725b9e38
+            |          |          0x7f1849b9ede4
+            |          |          TestConcurrencyIncrement()::$_6::operator()
+            |          |          
+            |          |--1.06%--std::thread::_State_impl<std::thread::_Invoker<std::tuple<TestConcurrencyIncrement()::$_8> > >::~_State_impl
+            |          |          0x7fff725b9e38
+            |          |          0x7f1849b9ede4
+            |          |          TestConcurrencyIncrement()::$_6::operator()
+            |          |          |          
+            |          |           --0.50%--NJK::TStorage::Get
+            |          |          
+            |           --0.94%--std::thread::_State_impl<std::thread::_Invoker<std::tuple<TestConcurrencyIncrement()::$_7> > >::~_State_impl
+            |                     0x7fff725b9e38
+            |                     0x7f1849b9ede4
+            |                     TestConcurrencyIncrement()::$_6::operator()
+            |          
+             --0.65%--__libc_start_main
+                       main
+                       TestConcurrencyIncrement
+                       NJK::TVolume::~TVolume
+                       NJK::NVolume::TMetaGroup::~TMetaGroup
+                       NJK::TCachedBlockFile::~TCachedBlockFile
+                       NJK::TBlockDirectIoFile::WriteBlock
+                       __libc_pwrite64
+                       entry_SYSCALL_64_after_hwframe
+                       do_syscall_64
+                       __x64_sys_pwrite64
+                       ksys_pwrite64
+                       vfs_write
+                       new_sync_write
+                       ext4_file_write_iter
+                       ext4_dio_write_iter
+                       iomap_dio_rw
+                       __iomap_dio_rw
+
+     3.45%     1.04%  a.out    a.out                [.] NJK::TStorage::TImpl::TDentry::GetValue[abi:cxx11]
+            |          
+            |--2.40%--NJK::TStorage::TImpl::TDentry::GetValue[abi:cxx11]
+            |          |          
+            |          |--1.04%--NJK::TStorage::TImpl::TDentry::LockGuard11
+            |          |          
+            |          |--0.58%--NJK::TStorage::TImpl::TDentry::LockGuard5
+            |          |          
+            |           --0.54%--NJK::TStorage::TImpl::TDentry::LockGuard4
+            |          
+             --1.04%--0xfffffdd0e9000000
+
+     3.25%     3.00%  a.out    libstdc++.so.6.0.28  [.] std::_Hash_bytes
+            |          
+             --3.00%--0xfffffdd0e9000000
+                       |          
+                       |--1.10%--std::thread::_State_impl<std::thread::_Invoker<std::tuple<TestConcurrencyIncrement()::$_8> > >::~_State_impl
+                       |          0x7fff725b9e38
+                       |          0x7f1849b9ede4
+                       |          TestConcurrencyIncrement()::$_6::operator()
+                       |          |          
+                       |          |--0.53%--NJK::TStorage::Get
+                       |          |          NJK::TStorage::TImpl::ResolvePath
+                       |          |          
+                       |           --0.51%--NJK::TStorage::TImpl::Set
+                       |                     NJK::TStorage::TImpl::ResolvePath
+                       |          
+                       |--1.07%--std::thread::_State_impl<std::thread::_Invoker<std::tuple<TestConcurrencyIncrement()::$_9> > >::~_State_impl
+                       |          0x7fff725b9e38
+                       |          0x7f1849b9ede4
+                       |          TestConcurrencyIncrement()::$_6::operator()
+                       |          
+                        --0.83%--std::thread::_State_impl<std::thread::_Invoker<std::tuple<TestConcurrencyIncrement()::$_7> > >::~_State_impl
+                                  0x7fff725b9e38
+                                  0x7f1849b9ede4
+                                  TestConcurrencyIncrement()::$_6::operator()
+
+     3.21%     0.00%  a.out    [kernel.kallsyms]    [k] asm_sysvec_apic_timer_interrupt
+            |
+            ---asm_sysvec_apic_timer_interrupt
+               |          
+                --3.19%--sysvec_apic_timer_interrupt
+                          |          
+                           --3.15%--__sysvec_apic_timer_interrupt
+                                     hrtimer_interrupt
+                                     |          
+                                     |--1.13%--__hrtimer_run_queues
+                                     |          |          
+                                     |           --1.12%--tick_sched_timer
+                                     |          
+                                     |--1.05%--tick_program_event
+                                     |          clockevents_program_event
+                                     |          ktime_get
+                                     |          read_hpet
+                                     |          
+                                      --0.95%--ktime_get_update_offsets_now
+                                                read_hpet
+
+     3.19%     0.00%  a.out    [kernel.kallsyms]    [k] sysvec_apic_timer_interrupt
+            |
+            ---sysvec_apic_timer_interrupt
+               |          
+                --3.15%--__sysvec_apic_timer_interrupt
+                          hrtimer_interrupt
+                          |          
+                          |--1.13%--__hrtimer_run_queues
+                          |          |          
+                          |           --1.12%--tick_sched_timer
+                          |          
+                          |--1.05%--tick_program_event
+                          |          clockevents_program_event
+                          |          ktime_get
+                          |          read_hpet
+                          |          
+                           --0.95%--ktime_get_update_offsets_now
+                                     read_hpet
+
+     3.16%     0.00%  a.out    [kernel.kallsyms]    [k] __sysvec_apic_timer_interrupt
+            |
+            ---__sysvec_apic_timer_interrupt
+               hrtimer_interrupt
+               |          
+               |--1.13%--__hrtimer_run_queues
+               |          |          
+               |           --1.12%--tick_sched_timer
+               |          
+               |--1.05%--tick_program_event
+               |          clockevents_program_event
+               |          ktime_get
+               |          read_hpet
+               |          
+                --0.96%--ktime_get_update_offsets_now
+                          read_hpet
+
+     3.16%     0.01%  a.out    [kernel.kallsyms]    [k] hrtimer_interrupt
+            |          
+             --3.15%--hrtimer_interrupt
+                       |          
+                       |--1.13%--__hrtimer_run_queues
+                       |          |          
+                       |           --1.12%--tick_sched_timer
+                       |          
+                       |--1.05%--tick_program_event
+                       |          clockevents_program_event
+                       |          ktime_get
+                       |          read_hpet
+                       |          
+                        --0.96%--ktime_get_update_offsets_now
+                                  read_hpet
+
+     3.02%     2.82%  a.out    a.out                [.] NJK::TStorage::TImpl::TDentry::WaitInitialized
+            |          
+             --2.82%--0xfffffdd0e9000000
+                       |          
+                       |--1.12%--std::thread::_State_impl<std::thread::_Invoker<std::tuple<TestConcurrencyIncrement()::$_8> > >::~_State_impl
+                       |          0x7fff725b9e38
+                       |          0x7f1849b9ede4
+                       |          TestConcurrencyIncrement()::$_6::operator()
+                       |          |          
+                       |           --0.61%--NJK::TStorage::TImpl::Set
+                       |                     NJK::TStorage::TImpl::ResolvePath
+                       |                     |          
+                       |                      --0.55%--NJK::TStorage::TImpl::ResolveDirs
+                       |                                |          
+                       |                                 --0.53%--NJK::TStorage::TImpl::StepPath
+                       |                                           |          
+                       |                                            --0.52%--NJK::TStorage::TImpl::TDentry::WaitInitialized
+                       |          
+                       |--0.88%--std::thread::_State_impl<std::thread::_Invoker<std::tuple<TestConcurrencyIncrement()::$_7> > >::~_State_impl
+                       |          0x7fff725b9e38
+                       |          0x7f1849b9ede4
+                       |          TestConcurrencyIncrement()::$_6::operator()
+                       |          
+                        --0.82%--std::thread::_State_impl<std::thread::_Invoker<std::tuple<TestConcurrencyIncrement()::$_9> > >::~_State_impl
+                                  0x7fff725b9e38
+                                  0x7f1849b9ede4
+                                  TestConcurrencyIncrement()::$_6::operator()
+
+     3.01%     0.99%  a.out    a.out                [.] NJK::TStorage::TImpl::TDentry::SetValue
+            |          
+            |--2.02%--NJK::TStorage::TImpl::TDentry::SetValue
+            |          |          
+            |          |--0.82%--NJK::TStorage::TImpl::TDentry::LockGuard7
+            |          |          
+            |           --0.56%--NJK::TStorage::TImpl::TDentry::LockGuard9
+            |          
+             --0.99%--0xfffffdd0e9000000
+
+     2.54%     0.00%  a.out    [kernel.kallsyms]    [k] ktime_get
+            |
+            ---ktime_get
+               read_hpet
+
+     1.69%     1.51%  a.out    libc-2.31.so         [.] __memcmp_avx2_movbe
+            |          
+             --1.51%--0xfffffdd0e9000000
+                       |          
+                       |--0.57%--std::thread::_State_impl<std::thread::_Invoker<std::tuple<TestConcurrencyIncrement()::$_8> > >::~_State_impl
+                       |          0x7fff725b9e38
+                       |          0x7f1849b9ede4
+                       |          TestConcurrencyIncrement()::$_6::operator()
+                       |          
+                        --0.53%--std::thread::_State_impl<std::thread::_Invoker<std::tuple<TestConcurrencyIncrement()::$_9> > >::~_State_impl
+                                  0x7fff725b9e38
+                                  0x7f1849b9ede4
+                                  TestConcurrencyIncrement()::$_6::operator()
+
+     1.64%     0.67%  a.out    a.out                [.] memcpy@plt
+            |          
+            |--0.97%--memcpy@plt
+            |          
+             --0.67%--0xfffffdd0e9000000
+
+     1.21%     1.10%  a.out    a.out                [.] NJK::TStorage::TImpl::TDentry::LockGuard7
+            |          
+             --1.10%--0xfffffdd0e9000000
+
+     1.16%     0.44%  a.out    a.out                [.] NJK::TStorage::TImpl::TDentry::UnsetValue
+            |          
+             --0.72%--NJK::TStorage::TImpl::TDentry::UnsetValue
+
+     1.13%     0.00%  a.out    [kernel.kallsyms]    [k] __hrtimer_run_queues
+            |
+            ---__hrtimer_run_queues
+               |          
+                --1.12%--tick_sched_timer
+
+     1.12%     0.00%  a.out    [kernel.kallsyms]    [k] tick_sched_timer
+            |
+            ---tick_sched_timer
+
+     1.10%     1.05%  a.out    a.out                [.] NJK::TStorage::TImpl::TDentry::LockGuard11
+            |          
+             --1.05%--0xfffffdd0e9000000
+
+     1.05%     0.00%  a.out    [kernel.kallsyms]    [k] tick_program_event
+            |
+            ---tick_program_event
+               clockevents_program_event
+               ktime_get
+               read_hpet
+
+     1.05%     0.00%  a.out    [kernel.kallsyms]    [k] clockevents_program_event
+            |
+            ---clockevents_program_event
+               ktime_get
+               read_hpet
+
+     0.96%     0.00%  a.out    [kernel.kallsyms]    [k] ktime_get_update_offsets_now
+            |
+            ---ktime_get_update_offsets_now
+               read_hpet
+
+     0.81%     0.01%  a.out    [kernel.kallsyms]    [k] entry_SYSCALL_64_after_hwframe
+            |          
+             --0.80%--entry_SYSCALL_64_after_hwframe
+                       do_syscall_64
+                       |          
+                        --0.69%--__x64_sys_pwrite64
+                                  ksys_pwrite64
+                                  vfs_write
+                                  |          
+                                   --0.69%--new_sync_write
+                                             ext4_file_write_iter
+                                             ext4_dio_write_iter
+                                             iomap_dio_rw
+                                             |          
+                                              --0.66%--__iomap_dio_rw
+
+     0.80%     0.00%  a.out    [kernel.kallsyms]    [k] do_syscall_64
+            |
+            ---do_syscall_64
+               |          
+                --0.69%--__x64_sys_pwrite64
+                          ksys_pwrite64
+                          vfs_write
+                          |          
+                           --0.69%--new_sync_write
+                                     ext4_file_write_iter
+                                     ext4_dio_write_iter
+                                     iomap_dio_rw
+                                     |          
+                                      --0.66%--__iomap_dio_rw
+
+     0.76%     0.00%  a.out    libc-2.31.so         [.] __libc_start_main
+            |
+            ---__libc_start_main
+               main
+               |          
+                --0.73%--TestConcurrencyIncrement
+                          NJK::TVolume::~TVolume
+                          NJK::NVolume::TMetaGroup::~TMetaGroup
+                          |          
+                           --0.69%--NJK::TCachedBlockFile::~TCachedBlockFile
+                                     NJK::TBlockDirectIoFile::WriteBlock
+                                     __libc_pwrite64
+                                     entry_SYSCALL_64_after_hwframe
+                                     do_syscall_64
+                                     __x64_sys_pwrite64
+                                     ksys_pwrite64
+                                     vfs_write
+                                     |          
+                                      --0.69%--new_sync_write
+                                                ext4_file_write_iter
+                                                ext4_dio_write_iter
+                                                iomap_dio_rw
+                                                |          
+                                                 --0.66%--__iomap_dio_rw
+
+     0.76%     0.00%  a.out    a.out                [.] main
+            |
+            ---main
+               |          
+                --0.73%--TestConcurrencyIncrement
+                          NJK::TVolume::~TVolume
+                          NJK::NVolume::TMetaGroup::~TMetaGroup
+                          |          
+                           --0.69%--NJK::TCachedBlockFile::~TCachedBlockFile
+                                     NJK::TBlockDirectIoFile::WriteBlock
+                                     __libc_pwrite64
+                                     entry_SYSCALL_64_after_hwframe
+                                     do_syscall_64
+                                     __x64_sys_pwrite64
+                                     ksys_pwrite64
+                                     vfs_write
+                                     |          
+                                      --0.69%--new_sync_write
+                                                ext4_file_write_iter
+                                                ext4_dio_write_iter
+                                                iomap_dio_rw
+                                                |          
+                                                 --0.66%--__iomap_dio_rw
+
+     0.73%     0.00%  a.out    a.out                [.] TestConcurrencyIncrement
+            |
+            ---TestConcurrencyIncrement
+               NJK::TVolume::~TVolume
+               NJK::NVolume::TMetaGroup::~TMetaGroup
+               |          
+                --0.69%--NJK::TCachedBlockFile::~TCachedBlockFile
+                          NJK::TBlockDirectIoFile::WriteBlock
+                          __libc_pwrite64
+                          entry_SYSCALL_64_after_hwframe
+                          do_syscall_64
+                          __x64_sys_pwrite64
+                          ksys_pwrite64
+                          vfs_write
+                          |          
+                           --0.69%--new_sync_write
+                                     ext4_file_write_iter
+                                     ext4_dio_write_iter
+                                     iomap_dio_rw
+                                     |          
+                                      --0.66%--__iomap_dio_rw
+
+     0.73%     0.00%  a.out    a.out                [.] NJK::TVolume::~TVolume
+            |
+            ---NJK::TVolume::~TVolume
+               NJK::NVolume::TMetaGroup::~TMetaGroup
+               |          
+                --0.69%--NJK::TCachedBlockFile::~TCachedBlockFile
+                          NJK::TBlockDirectIoFile::WriteBlock
+                          __libc_pwrite64
+                          entry_SYSCALL_64_after_hwframe
+                          do_syscall_64
+                          __x64_sys_pwrite64
+                          ksys_pwrite64
+                          vfs_write
+                          |          
+                           --0.69%--new_sync_write
+                                     ext4_file_write_iter
+                                     ext4_dio_write_iter
+                                     iomap_dio_rw
+                                     |          
+                                      --0.66%--__iomap_dio_rw
+
+     0.73%     0.00%  a.out    a.out                [.] NJK::NVolume::TMetaGroup::~TMetaGroup
+            |
+            ---NJK::NVolume::TMetaGroup::~TMetaGroup
+               |          
+                --0.69%--NJK::TCachedBlockFile::~TCachedBlockFile
+                          NJK::TBlockDirectIoFile::WriteBlock
+                          __libc_pwrite64
+                          entry_SYSCALL_64_after_hwframe
+                          do_syscall_64
+                          __x64_sys_pwrite64
+                          ksys_pwrite64
+                          vfs_write
+                          |          
+                           --0.69%--new_sync_write
+                                     ext4_file_write_iter
+                                     ext4_dio_write_iter
+                                     iomap_dio_rw
+                                     |          
+                                      --0.66%--__iomap_dio_rw
+
+     0.72%     0.00%  a.out    [kernel.kallsyms]    [k] vfs_write
+            |
+            ---vfs_write
+               |          
+                --0.71%--new_sync_write
+                          |          
+                           --0.69%--ext4_file_write_iter
+                                     ext4_dio_write_iter
+                                     iomap_dio_rw
+                                     |          
+                                      --0.66%--__iomap_dio_rw
+
+     0.71%     0.00%  a.out    [kernel.kallsyms]    [k] new_sync_write
+            |
+            ---new_sync_write
+               |          
+                --0.69%--ext4_file_write_iter
+                          ext4_dio_write_iter
+                          iomap_dio_rw
+                          |          
+                           --0.66%--__iomap_dio_rw
+
+     0.69%     0.00%  a.out    a.out                [.] NJK::TCachedBlockFile::~TCachedBlockFile
+            |
+            ---NJK::TCachedBlockFile::~TCachedBlockFile
+               NJK::TBlockDirectIoFile::WriteBlock
+               __libc_pwrite64
+               entry_SYSCALL_64_after_hwframe
+               do_syscall_64
+               __x64_sys_pwrite64
+               ksys_pwrite64
+               vfs_write
+               |          
+                --0.69%--new_sync_write
+                          ext4_file_write_iter
+                          ext4_dio_write_iter
+                          iomap_dio_rw
+                          |          
+                           --0.66%--__iomap_dio_rw
+
+     0.69%     0.00%  a.out    a.out                [.] NJK::TBlockDirectIoFile::WriteBlock
+            |
+            ---NJK::TBlockDirectIoFile::WriteBlock
+               __libc_pwrite64
+               entry_SYSCALL_64_after_hwframe
+               do_syscall_64
+               __x64_sys_pwrite64
+               ksys_pwrite64
+               vfs_write
+               |          
+                --0.69%--new_sync_write
+                          ext4_file_write_iter
+                          ext4_dio_write_iter
+                          iomap_dio_rw
+                          |          
+                           --0.66%--__iomap_dio_rw
+
+     0.69%     0.00%  a.out    libpthread-2.31.so   [.] __libc_pwrite64
+            |
+            ---__libc_pwrite64
+               entry_SYSCALL_64_after_hwframe
+               do_syscall_64
+               __x64_sys_pwrite64
+               ksys_pwrite64
+               vfs_write
+               |          
+                --0.69%--new_sync_write
+                          ext4_file_write_iter
+                          ext4_dio_write_iter
+                          iomap_dio_rw
+                          |          
+                           --0.66%--__iomap_dio_rw
+
+     0.69%     0.00%  a.out    [kernel.kallsyms]    [k] __x64_sys_pwrite64
+            |
+            ---__x64_sys_pwrite64
+               ksys_pwrite64
+               vfs_write
+               |          
+                --0.69%--new_sync_write
+                          ext4_file_write_iter
+                          ext4_dio_write_iter
+                          iomap_dio_rw
+                          |          
+                           --0.66%--__iomap_dio_rw
+
+     0.69%     0.00%  a.out    [kernel.kallsyms]    [k] ksys_pwrite64
+            |
+            ---ksys_pwrite64
+               vfs_write
+               |          
+                --0.69%--new_sync_write
+                          ext4_file_write_iter
+                          ext4_dio_write_iter
+                          iomap_dio_rw
+                          |          
+                           --0.66%--__iomap_dio_rw
+
+     0.69%     0.00%  a.out    [kernel.kallsyms]    [k] ext4_file_write_iter
+            |
+            ---ext4_file_write_iter
+               ext4_dio_write_iter
+               iomap_dio_rw
+               |          
+                --0.66%--__iomap_dio_rw
+
+     0.69%     0.00%  a.out    [kernel.kallsyms]    [k] ext4_dio_write_iter
+            |
+            ---ext4_dio_write_iter
+               iomap_dio_rw
+               |          
+                --0.66%--__iomap_dio_rw
+
+     0.69%     0.00%  a.out    [kernel.kallsyms]    [k] iomap_dio_rw
+            |
+            ---iomap_dio_rw
+               |          
+                --0.66%--__iomap_dio_rw
+
+     0.67%     0.59%  a.out    a.out                [.] NJK::TStorage::TImpl::TDentry::LockGuard6
+            |          
+             --0.59%--0xfffffdd0e9000000
+
+     0.66%     0.00%  a.out    [kernel.kallsyms]    [k] __iomap_dio_rw
+            |
+            ---__iomap_dio_rw
+
+     0.62%     0.59%  a.out    a.out                [.] NJK::TStorage::TImpl::TDentry::LockGuard5
+            |          
+             --0.59%--0xfffffdd0e9000000
+
+     0.60%     0.57%  a.out    a.out                [.] NJK::TStorage::TImpl::TDentry::LockGuard9
+            |          
+             --0.57%--0xfffffdd0e9000000
+
+     0.58%     0.52%  a.out    a.out                [.] NJK::TStorage::TImpl::TDentry::LockGuard4
+            |          
+             --0.52%--0xfffffdd0e9000000
+
+     0.53%     0.15%  a.out    a.out                [.] std::_Hash_bytes@plt
+     0.48%     0.16%  a.out    a.out                [.] bcmp@plt
+     0.47%     0.00%  a.out    [kernel.kallsyms]    [k] iomap_apply
+     0.46%     0.00%  a.out    [kernel.kallsyms]    [k] iomap_dio_actor
+     0.46%     0.00%  a.out    [kernel.kallsyms]    [k] iomap_dio_bio_actor
+     0.46%     0.00%  a.out    [kernel.kallsyms]    [k] iomap_dio_submit_bio
+     0.46%     0.00%  a.out    [kernel.kallsyms]    [k] submit_bio
+     0.46%     0.00%  a.out    [kernel.kallsyms]    [k] submit_bio_noacct
+     0.44%     0.00%  a.out    [kernel.kallsyms]    [k] tick_sched_handle.isra.0
+     0.44%     0.00%  a.out    [kernel.kallsyms]    [k] update_process_times
+     0.43%     0.00%  a.out    [kernel.kallsyms]    [k] scheduler_tick
+     0.39%     0.00%  a.out    [kernel.kallsyms]    [k] sched_clock_tick
+     0.26%     0.00%  a.out    [kernel.kallsyms]    [k] dm_submit_bio
+     0.26%     0.00%  a.out    [kernel.kallsyms]    [k] __split_and_process_non_flush
+     0.25%     0.25%  a.out    a.out                [.] NJK::TStorage::TImpl::TDentry::LockGuard10
+     0.23%     0.00%  a.out    [kernel.kallsyms]    [k] tick_sched_do_timer
+     0.23%     0.00%  a.out    [kernel.kallsyms]    [k] tick_do_update_jiffies64.part.0
+     0.23%     0.00%  a.out    [kernel.kallsyms]    [k] update_wall_time
+     0.23%     0.00%  a.out    [kernel.kallsyms]    [k] timekeeping_advance
+     0.20%     0.00%  a.out    [kernel.kallsyms]    [k] submit_bio_checks
+     0.20%     0.11%  a.out    a.out                [.] std::__detail::__variant::__gen_vtable_impl<true, std::__detail::__variant::_Multi_array<std::__detail::__variant::__variant_cookie (*)(std::__detail::__variant::_Variant_storage<false, std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView>::_M_reset_impl()::{lambda(auto:1&&)#1}&&, std::variant<std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView>&)>, std::tuple<std::variant<std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView> >, std::integer_sequence<unsigned long, 3ul> >::__visit_invoke
+     0.15%     0.00%  a.out    [kernel.kallsyms]    [k] __map_bio
+     0.15%     0.00%  a.out    [kernel.kallsyms]    [k] blk_mq_submit_bio
+     0.15%     0.00%  a.out    [kernel.kallsyms]    [k] __blk_mq_alloc_request
+     0.15%     0.00%  a.out    [kernel.kallsyms]    [k] blk_mq_rq_ctx_init
+     0.13%     0.09%  a.out    a.out                [.] std::__detail::__variant::__gen_vtable_impl<true, std::__detail::__variant::_Multi_array<std::__detail::__variant::__variant_cookie (*)(void std::__detail::__variant::__variant_construct<std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView, std::__detail::__variant::_Copy_ctor_base<false, std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView>&, std::__detail::__variant::_Copy_ctor_base<false, std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView> const&>(std::__detail::__variant::_Copy_ctor_base<false, std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView>&, std::__detail::__variant::_Copy_ctor_base<false, std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView> const&)::{lambda(auto:1&&)#1}&&, std::variant<std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView> const&)>, std::tuple<std::variant<std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView> const>, std::integer_sequence<unsigned long, 3ul> >::__visit_invoke
+     0.11%     0.00%  a.out    [kernel.kallsyms]    [k] __bio_clone_fast
+     0.10%     0.00%  a.out    [kernel.kallsyms]    [k] blk_io_schedule
+     0.10%     0.00%  a.out    [kernel.kallsyms]    [k] io_schedule_timeout
+     0.10%     0.00%  a.out    [kernel.kallsyms]    [k] schedule_timeout
+     0.10%     0.00%  a.out    [kernel.kallsyms]    [k] schedule
+     0.10%     0.00%  a.out    [kernel.kallsyms]    [k] __sched_text_start
+     0.10%     0.00%  a.out    [kernel.kallsyms]    [k] __delayacct_blkio_start
+     0.09%     0.00%  a.out    [kernel.kallsyms]    [k] blk_finish_plug
+     0.09%     0.00%  a.out    [kernel.kallsyms]    [k] blk_flush_plug_list
+     0.09%     0.00%  a.out    [kernel.kallsyms]    [k] blk_mq_flush_plug_list
+     0.09%     0.00%  a.out    [kernel.kallsyms]    [k] blk_mq_sched_insert_requests
+     0.09%     0.00%  a.out    [kernel.kallsyms]    [k] blk_mq_try_issue_list_directly
+     0.09%     0.00%  a.out    [kernel.kallsyms]    [k] blk_mq_request_issue_directly
+     0.09%     0.00%  a.out    [kernel.kallsyms]    [k] __blk_mq_try_issue_directly
+     0.09%     0.00%  a.out    [nvme]               [k] nvme_queue_rq
+     0.09%     0.00%  a.out    [kernel.kallsyms]    [k] blk_mq_start_request
+     0.09%     0.07%  a.out    a.out                [.] NJK::TStorage::Set
+     0.08%     0.08%  a.out    a.out                [.] std::__detail::__variant::__gen_vtable_impl<true, std::__detail::__variant::_Multi_array<std::__detail::__variant::__variant_idx_cookie (*)(std::__detail::__variant::_Copy_assign_base<false, std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView>::operator=(std::__detail::__variant::_Copy_assign_base<false, std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView> const&)::{lambda(auto:1&&, auto:2)#1}&&, std::variant<std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView> const&)>, std::tuple<std::variant<std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView> const>, std::integer_sequence<unsigned long, 3ul> >::__visit_invoke
+     0.07%     0.03%  a.out    a.out                [.] std::__detail::__variant::__gen_vtable_impl<true, std::__detail::__variant::_Multi_array<std::__detail::__variant::__variant_cookie (*)(std::__detail::__variant::_Variant_storage<false, std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView>::_M_reset_impl()::{lambda(auto:1&&)#1}&&, std::variant<std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView>&)>, std::tuple<std::variant<std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView> >, std::integer_sequence<unsigned long, 0ul> >::__visit_invoke
+     0.04%     0.04%  a.out    ld-2.31.so           [.] _dl_relocate_object
+     0.04%     0.00%  a.out    [unknown]            [.] 0x41e589480000b264
+     0.04%     0.00%  a.out    ld-2.31.so           [.] _dl_sysdep_start
+     0.04%     0.00%  a.out    ld-2.31.so           [.] dl_main
+     0.04%     0.04%  a.out    libstdc++.so.6.0.28  [.] std::num_put<char, std::ostreambuf_iterator<char, std::char_traits<char> > >::_M_pad
+     0.04%     0.00%  a.out    [unknown]            [.] 0x4810c08348000bd5
+     0.04%     0.00%  a.out    libstdc++.so.6.0.28  [.] std::num_put<char, std::ostreambuf_iterator<char, std::char_traits<char> > >::~num_put
+     0.04%     0.00%  a.out    [unknown]            [.] 0x0000000000000002
+     0.04%     0.00%  a.out    libstdc++.so.6.0.28  [.] std::ostream::_M_insert<unsigned long>
+     0.04%     0.00%  a.out    [unknown]            [k] 0000000000000000
+     0.04%     0.04%  a.out    libc-2.31.so         [.] _int_malloc
+     0.04%     0.00%  a.out    a.out                [.] NJK::TStorage::TImpl::TDentry::EnsureChild
+     0.04%     0.00%  a.out    a.out                [.] NJK::NVolume::TInodeDataOps::EnsureChild
+     0.04%     0.00%  a.out    a.out                [.] NJK::NVolume::TInodeDataOps::AddChild
+     0.04%     0.00%  a.out    a.out                [.] NJK::NVolume::TInodeDataOps::SerializeDirectoryEntries
+     0.03%     0.00%  a.out    libc-2.31.so         [.] syscall
+     0.03%     0.00%  a.out    libc-2.31.so         [.] __GI___libc_write
+     0.03%     0.00%  a.out    [kernel.kallsyms]    [k] asm_sysvec_thermal
+     0.03%     0.01%  a.out    a.out                [.] std::__detail::__variant::__gen_vtable_impl<true, std::__detail::__variant::_Multi_array<std::__detail::__variant::__variant_cookie (*)(void std::__detail::__variant::__variant_construct<std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView, std::__detail::__variant::_Copy_ctor_base<false, std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView>&, std::__detail::__variant::_Copy_ctor_base<false, std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView> const&>(std::__detail::__variant::_Copy_ctor_base<false, std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView>&, std::__detail::__variant::_Copy_ctor_base<false, std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView> const&)::{lambda(auto:1&&)#1}&&, std::variant<std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView> const&)>, std::tuple<std::variant<std::monostate, bool, int, unsigned int, long, unsigned long, float, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, NJK::NVolume::TBlobView> const>, std::integer_sequence<unsigned long, 0ul> >::__visit_invoke
+     0.03%     0.00%  a.out    [kernel.kallsyms]    [k] asm_call_sysvec_on_stack
+     0.03%     0.03%  a.out    a.out                [.] std::thread::join@plt
+     0.03%     0.00%  a.out    libstdc++.so.6.0.28  [.] std::thread::join
+     0.03%     0.02%  a.out    [kernel.kallsyms]    [k] ext4_ext_map_blocks
+     0.03%     0.00%  a.out    [kernel.kallsyms]    [k] iomap_dio_complete
+     0.03%     0.00%  a.out    [kernel.kallsyms]    [k] ext4_dio_write_end_io
+     0.03%     0.00%  a.out    [kernel.kallsyms]    [k] ext4_convert_unwritten_extents
+     0.03%     0.00%  a.out    [kernel.kallsyms]    [k] ext4_map_blocks
+     0.03%     0.03%  a.out    libc-2.31.so         [.] cfree@GLIBC_2.2.5
+     0.02%     0.01%  a.out    [kernel.kallsyms]    [k] insert_work
+     0.02%     0.01%  a.out    [kernel.kallsyms]    [k] try_to_wake_up
+     0.02%     0.00%  a.out    [kernel.kallsyms]    [k] wake_up_process
+     0.02%     0.00%  a.out    [kernel.kallsyms]    [k] irq_exit_rcu
+     0.02%     0.00%  a.out    [kernel.kallsyms]    [k] do_softirq_own_stack
+     0.02%     0.00%  a.out    [kernel.kallsyms]    [k] __softirqentry_text_start
+     0.02%     0.00%  a.out    [kernel.kallsyms]    [k] __x64_sys_write
+     0.02%     0.01%  a.out    [kernel.kallsyms]    [k] file_tty_write.isra.0
+     0.02%     0.00%  a.out    [kernel.kallsyms]    [k] ksys_write
+     0.02%     0.00%  a.out    [kernel.kallsyms]    [k] tty_write
+     0.02%     0.02%  a.out    [kernel.kallsyms]    [k] native_irq_return_iret
+     0.02%     0.00%  a.out    [kernel.kallsyms]    [k] __x64_sys_futex
+     0.02%     0.00%  a.out    [kernel.kallsyms]    [k] do_futex
+     0.02%     0.02%  a.out    [kernel.kallsyms]    [k] native_read_msr
+     0.02%     0.00%  a.out    [kernel.kallsyms]    [k] sysvec_thermal
+     0.02%     0.00%  a.out    [kernel.kallsyms]    [k] __sysvec_thermal
+     0.02%     0.00%  a.out    [kernel.kallsyms]    [k] intel_thermal_interrupt
+     0.02%     0.00%  a.out    [kernel.kallsyms]    [k] therm_throt_process
+     0.02%     0.00%  a.out    [kernel.kallsyms]    [k] get_therm_status
+     0.02%     0.02%  a.out    [kernel.kallsyms]    [k] kmem_cache_alloc
+     0.02%     0.00%  a.out    libc-2.31.so         [.] new_heap
+     0.02%     0.00%  a.out    [kernel.kallsyms]    [k] asm_exc_page_fault
+     0.02%     0.00%  a.out    [kernel.kallsyms]    [k] exc_page_fault
+     0.02%     0.00%  a.out    [kernel.kallsyms]    [k] do_user_addr_fault
+     0.02%     0.00%  a.out    [kernel.kallsyms]    [k] handle_mm_fault
+     0.02%     0.00%  a.out    [kernel.kallsyms]    [k] __handle_mm_fault
+     0.02%     0.00%  a.out    [kernel.kallsyms]    [k] do_anonymous_page
+     0.02%     0.00%  a.out    [kernel.kallsyms]    [k] __anon_vma_prepare
+     0.02%     0.02%  a.out    [kernel.kallsyms]    [k] unmap_page_range
+     0.02%     0.00%  a.out    libc-2.31.so         [.] __munmap
+     0.02%     0.00%  a.out    [kernel.kallsyms]    [k] __x64_sys_munmap
+     0.02%     0.00%  a.out    [kernel.kallsyms]    [k] __vm_munmap
+     0.02%     0.00%  a.out    [kernel.kallsyms]    [k] __do_munmap
+     0.02%     0.00%  a.out    [kernel.kallsyms]    [k] unmap_region
+     0.02%     0.00%  a.out    [kernel.kallsyms]    [k] unmap_vmas
+     0.02%     0.00%  a.out    [kernel.kallsyms]    [k] unmap_single_vma
+     0.01%     0.01%  a.out    [kernel.kallsyms]    [k] __vma_link_rb
+     0.01%     0.00%  a.out    [unknown]            [k] 0x00000000008c7927
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] __x64_sys_execve
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] do_execveat_common.isra.0
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] bprm_execve
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] exec_binprm
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] load_elf_binary
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] elf_map
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] vm_mmap
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] vm_mmap_pgoff
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] do_mmap
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] mmap_region
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] vma_link
+     0.01%     0.01%  a.out    libc-2.31.so         [.] malloc_consolidate
+     0.01%     0.01%  a.out    [kernel.kallsyms]    [k] xas_start
+     0.01%     0.00%  a.out    libpthread-2.31.so   [.] __close
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] syscall_exit_to_user_mode
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] exit_to_user_mode_prepare
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] task_work_run
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] ____fput
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] __fput
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] ext4_release_file
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] ext4_discard_preallocations
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] ext4_mb_load_buddy_gfp
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] pagecache_get_page
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] find_get_entry
+     0.01%     0.01%  a.out    [kernel.kallsyms]    [k] free_pcppages_bulk
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] __x64_sys_exit_group
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] do_group_exit
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] do_exit
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] mmput
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] exit_mmap
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] tlb_finish_mmu
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] tlb_flush_mmu
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] free_pages_and_swap_cache
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] release_pages
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] free_unref_page_list
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] free_unref_page_commit
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] run_timer_softirq
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] __run_timers.part.0
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] call_timer_fn
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] delayed_work_timer_fn
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] __queue_work
+     0.01%     0.01%  a.out    [kernel.kallsyms]    [k] rcu_sched_clock_irq
+     0.01%     0.01%  a.out    [kernel.kallsyms]    [k] native_write_msr
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] perf_pmu_enable.part.0
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] x86_pmu_enable
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] intel_pmu_enable_all
+     0.01%     0.01%  a.out    [kernel.kallsyms]    [k] try_grab_compound_head
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] futex_wait
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] futex_wait_setup
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] get_futex_key
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] get_user_pages_fast
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] internal_get_user_pages_fast
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] gup_pgd_range
+     0.01%     0.01%  a.out    [kernel.kallsyms]    [k] hrtimer_update_next_event
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] __hrtimer_get_next_event
+     0.01%     0.01%  a.out    [kernel.kallsyms]    [k] native_send_call_func_single_ipi
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] trigger_load_balance
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] kick_ilb
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] smp_call_function_single_async
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] generic_exec_single
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] __smp_call_single_queue
+     0.01%     0.01%  a.out    libstdc++.so.6.0.28  [.] std::chrono::_V2::system_clock::now
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] n_tty_write
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] pty_write
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] tty_flip_buffer_push
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] queue_work_on
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] perf_event_task_tick
+     0.01%     0.01%  a.out    [kernel.kallsyms]    [k] find_next_bit
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] hrtimer_wakeup
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] select_task_rq_fair
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] select_idle_sibling
+     0.01%     0.01%  a.out    [kernel.kallsyms]    [k] futex_wake
+     0.01%     0.01%  a.out    [kernel.kallsyms]    [k] cpuacct_charge
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] task_tick_fair
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] update_curr
+     0.01%     0.01%  a.out    [kernel.kallsyms]    [k] idle_cpu
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] run_rebalance_domains
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] rebalance_domains
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] load_balance
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] find_busiest_group
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] update_sd_lb_stats.constprop.0
+     0.01%     0.01%  a.out    [kernel.kallsyms]    [k] __ext4_journal_start_sb
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] ext4_iomap_begin
+     0.01%     0.01%  a.out    [kernel.kallsyms]    [k] jbd2_journal_get_write_access
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] ext4_ext_handle_unwritten_extents
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] __ext4_ext_dirty.isra.0
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] __ext4_mark_inode_dirty
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] ext4_reserve_inode_write
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] __ext4_journal_get_write_access
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] jbd2_write_access_granted.part.0
+     0.01%     0.01%  a.out    [kernel.kallsyms]    [k] __kmalloc
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] __fsnotify_parent
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] fsnotify
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] fsnotify_handle_inode_event.isra.0
+     0.01%     0.00%  a.out    [kernel.kallsyms]    [k] inotify_handle_inode_event
+     0.00%     0.00%  a.out    libc-2.31.so         [.] __clone
+     0.00%     0.00%  a.out    [kernel.kallsyms]    [k] ret_from_fork
+     0.00%     0.00%  a.out    [kernel.kallsyms]    [k] schedule_tail
+     0.00%     0.00%  a.out    [kernel.kallsyms]    [k] __irqentry_text_end
+     0.00%     0.00%  a.out    [kernel.kallsyms]    [k] _raw_spin_lock_irq
+     0.00%     0.00%  perf-ex  [kernel.kallsyms]    [k] native_write_msr
+     0.00%     0.00%  perf-ex  [unknown]            [k] 0x00000000008c7927
+     0.00%     0.00%  perf-ex  [kernel.kallsyms]    [k] entry_SYSCALL_64_after_hwframe
+     0.00%     0.00%  perf-ex  [kernel.kallsyms]    [k] do_syscall_64
+     0.00%     0.00%  perf-ex  [kernel.kallsyms]    [k] __x64_sys_execve
+     0.00%     0.00%  perf-ex  [kernel.kallsyms]    [k] do_execveat_common.isra.0
+     0.00%     0.00%  perf-ex  [kernel.kallsyms]    [k] bprm_execve
+     0.00%     0.00%  perf-ex  [kernel.kallsyms]    [k] exec_binprm
+     0.00%     0.00%  perf-ex  [kernel.kallsyms]    [k] load_elf_binary
+     0.00%     0.00%  perf-ex  [kernel.kallsyms]    [k] begin_new_exec
+     0.00%     0.00%  perf-ex  [kernel.kallsyms]    [k] perf_event_exec
+     0.00%     0.00%  perf-ex  [kernel.kallsyms]    [k] ctx_resched
+     0.00%     0.00%  perf-ex  [kernel.kallsyms]    [k] perf_pmu_enable.part.0
+     0.00%     0.00%  perf-ex  [kernel.kallsyms]    [k] x86_pmu_enable
+     0.00%     0.00%  perf-ex  [kernel.kallsyms]    [k] intel_pmu_enable_all
+     0.00%     0.00%  perf-ex  [kernel.kallsyms]    [k] nmi_handle
+     0.00%     0.00%  a.out    [kernel.kallsyms]    [k] finish_task_switch
+     0.00%     0.00%  a.out    [kernel.kallsyms]    [k] __perf_event_task_sched_in
+     0.00%     0.00%  a.out    [kernel.kallsyms]    [k] perf_event_nmi_handler
+     0.00%     0.00%  a.out    [kernel.kallsyms]    [k] intel_pmu_handle_irq
+
+
+#
+# (Cannot load tips.txt file, please install perf!)
+#

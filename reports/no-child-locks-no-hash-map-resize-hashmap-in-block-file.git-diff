@@ -1,0 +1,246 @@
+diff --git a/block_file.h b/block_file.h
+index 41568ee..6e1d3b7 100644
+--- a/block_file.h
++++ b/block_file.h
+@@ -75,34 +75,39 @@ namespace NJK {
+ 
+     private:
+         struct TRawBlock {
+-            std::mutex Lock;
+-            std::condition_variable CondVar;
++            TNaiveSpinLock Lock;
++            TCondVar CondVar;
+             TFixedBuffer Buf = TFixedBuffer::Empty();
+-            size_t RefCount = 0;
+             bool DataLoaded = false;
+             bool Dirty = false;
+             ui32 InModify = 0;
+             bool Flushing = false;
+         };
+ 
++        using TCache = THashMap<ui32, TRawBlock>;
++        using TRawBlockPtr = TCache::TValuePtr;
++
+     public:
+ 
+         template <bool Mutable>
+         class TPage {
+         public:
+-            TPage(TRawBlock* page)
+-                : Page_(page)
++            TPage(TRawBlockPtr page)
++                : Page_(std::move(page))
+             {
+             }
+ 
+             ~TPage() {
+-                std::lock_guard g(Page_->Lock);
++                auto g = MakeGuard(Page_->Lock);
+                 if (Mutable) {
+                     if (--Page_->InModify == 0) {
+-                        Page_->CondVar.notify_all();
++                        Page_->CondVar.NotifyAll();
+                     }
+                 }
+-                --Page_->RefCount;
++            }
++
++            TPage(TPage&& other) noexcept {
++                Page_.Swap(other.Page_);
+             }
+ 
+             std::conditional_t<Mutable, TFixedBuffer&, const TFixedBuffer&> Buf() const {
+@@ -110,42 +115,37 @@ namespace NJK {
+             }
+ 
+         private:
+-            TRawBlock* Page_{};
++            TRawBlockPtr Page_{};
+         };
+ 
+         TPage<false> GetBlock(size_t blockIdx) {
+             TPage<false> ret{GetBlockImpl(blockIdx, false)};
+-            //std::cerr << "+ GetBlock(" << blockIdx << ") => " << (void*)ret.Buf().Data() << '\n';
+             return ret;
+         }
+ 
+         TPage<true> GetMutableBlock(size_t blockIdx) {
+             TPage<true> ret{GetBlockImpl(blockIdx, true)};
+-            //std::cerr << "+ GetMutableBlock(" << blockIdx << ") => " << (void*)ret.Buf().Data() << '\n';
+             return ret;
+         }
+ 
+     private:
+-        TRawBlock* GetBlockImpl(size_t blockIdx, bool modify) {
+-            TRawBlock* page{};
++        TRawBlockPtr GetBlockImpl(size_t blockIdx, bool modify) {
++            TRawBlockPtr page{};
+             {
+-                std::lock_guard g(Lock_);
+-                page = &Cache_[blockIdx];
++                page = Cache_[blockIdx];
+             }
+ 
+-            std::unique_lock guard(page->Lock);
++            auto guard = MakeGuard(page->Lock);
+             if (page->Buf.Size() == 0) {
+                 page->Buf = TFixedBuffer::Aligned(File_.GetBlockSize()); // TODO BETTER
+-                //std::cerr << "++ Allocated Page: " << (void*)page->Buf.Data() << "\n";
+             }
+-            ++page->RefCount;
+             if (!page->DataLoaded) {
+                 File_.ReadBlock(page->Buf, blockIdx);
+                 page->DataLoaded = true;
+             }
+             if (modify) {
+                 while (page->Flushing) {
+-                    page->CondVar.wait(guard);
++                    page->CondVar.Wait(page->Lock);
+                 }
+                 page->Dirty = true;
+                 ++page->InModify; // we want simultaneously modify different inodes in same block
+@@ -154,24 +154,17 @@ namespace NJK {
+         }
+ 
+         void Flush() {
+-            for (auto& [blockIdx, block] : Cache_) {
++            Cache_.Iterate([this](ui32 blockIdx, TRawBlock& block) {
+                 if (block.Dirty) {
+-                    //std::cerr << "+ write dirty block " << blockIdx << '\n';
+                     File_.WriteBlock(block.Buf, blockIdx);
+                     block.Dirty = false;
+-                } else {
+-                    //std::cerr << "+ skip clean block " << blockIdx << '\n';
+                 }
+-            }
++            });
+         }
+ 
+     private:
+         TBlockDirectIoFile& File_;
+-
+-        std::mutex Lock_;
+-        std::unordered_map<ui32, TRawBlock> Cache_;
+-        // TODO
+-        //THashMap<ui32, TRawBlock> Cache_;
++        THashMap<ui32, TRawBlock> Cache_;
+     };
+ 
+     class TCachedBlockFileRegion {
+@@ -194,4 +187,4 @@ namespace NJK {
+         size_t Offset_ = 0;
+     };
+ 
+-}
+\ No newline at end of file
++}
+diff --git a/hash_map.h b/hash_map.h
+index c268756..e454731 100644
+--- a/hash_map.h
++++ b/hash_map.h
+@@ -75,12 +75,13 @@ namespace NJK {
+         };
+ 
+         THashMap() {
+-            std::unique_lock g(ResizeLock_);
++            CapacityIdx_ = 11;
++            //std::unique_lock g(ResizeLock_);
+             Resize(HashTablePrimes[CapacityIdx_]);
+         }
+ 
+         size_t bucket_count() {
+-            std::shared_lock g(ResizeLock_);
++            //std::shared_lock g(ResizeLock_);
+             return Buckets_.size();
+         }
+ 
+@@ -109,6 +110,17 @@ namespace NJK {
+             return Lookup(key, true);
+         }
+ 
++        template <typename F>
++        void Iterate(F&& f) {
++            for (auto& bucket : Buckets_) {
++                bucket.Lock->lock();
++                for (auto& kv : bucket.Chain) {
++                    f(kv.Key, kv.Value);
++                }
++                bucket.Lock->unlock();
++            }
++        }
++
+     private:
+         TLookupResult Lookup(const TKey& key, bool create);
+ 
+@@ -136,8 +148,8 @@ namespace NJK {
+             std::atomic<size_t> RefCount{0}; // atomic, because bucket lock is changed on hash table resize
+         };
+ 
+-        const float MaxLoadFactor_ = 1.0;
+-        std::shared_mutex ResizeLock_;
++        //const float MaxLoadFactor_ = 1.0;
++        //std::shared_mutex ResizeLock_;
+         //using TKeyValue = std::pair<TKey, TValueWithRefCount>;
+         struct TBucket {
+             std::unique_ptr<TLock> Lock;
+@@ -157,7 +169,7 @@ namespace NJK {
+ 
+         TKeyValue* kv = nullptr;
+         {
+-            std::shared_lock g(ResizeLock_);
++            //std::shared_lock g(ResizeLock_);
+             auto& bucket = Buckets_[hash % Buckets_.size()];
+ 
+             auto g1 = MakeGuard(*bucket.Lock);
+@@ -185,6 +197,7 @@ namespace NJK {
+             return TLookupResult{TValuePtr{}, false};
+         }
+ 
++        #if 0
+         if (loadFactor > MaxLoadFactor_) {
+             std::unique_lock g(ResizeLock_);
+             loadFactor = Size_.load() * 1.0 / Buckets_.size();
+@@ -192,6 +205,7 @@ namespace NJK {
+                 Resize(HashTablePrimes[++CapacityIdx_]);
+             }
+         }
++        #endif
+ 
+         return {TValuePtr{kv}, created};
+     }
+diff --git a/storage.cpp b/storage.cpp
+index 5fbe19c..3330fe9 100644
+--- a/storage.cpp
++++ b/storage.cpp
+@@ -430,30 +430,11 @@ TODO_BETTER_CONCURRENCY
+     [[nodiscard]]
+     Y_NO_INLINE
+     TStorage::TImpl::TChildNameLockGuard TStorage::TImpl::TDentry::LockChild(const std::string& name) {
+-        auto copy = name;
+-        {
+-            auto g = LockGuard();
+-            while (true) {
+-                if (std::none_of(ChildrenLocks.begin(), ChildrenLocks.end(), [&](const std::string& other) { return other == name; })) {
+-                    break;
+-                }
+-                ChildrenLocksCondVar.Wait(Lock);
+-            }
+-            ChildrenLocks.emplace_back(std::move(copy));
+-        }
+         return TChildNameLockGuard(this, name);
+     }
+ 
+     Y_NO_INLINE
+-    void TStorage::TImpl::TDentry::UnlockChild(const std::string& name) {
+-        {
+-            auto g = LockGuard();
+-            const size_t size0 = ChildrenLocks.size();
+-            Y_VERIFY(size0 > 0);
+-            std::erase(ChildrenLocks, name);
+-            Y_VERIFY(ChildrenLocks.size() == size0 - 1);
+-        }
+-        ChildrenLocksCondVar.NotifyAll(); // FIXME One
++    void TStorage::TImpl::TDentry::UnlockChild(const std::string&) {
+     }
+ 
+     Y_NO_INLINE
