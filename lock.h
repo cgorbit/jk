@@ -108,13 +108,8 @@ namespace NJK {
             return reinterpret_cast<int*>(&Iter_);
         }
 
-        void FutexWait(int val) {
-            syscall(SYS_futex, Word(), FUTEX_WAIT, val, nullptr, nullptr, 0);
-        }
-
-        void FutexWake(int count) {
-            syscall(SYS_futex, Word(), FUTEX_WAKE, count, nullptr, nullptr, 0);
-        }
+        void FutexWait(int val);
+        void FutexWake(int count);
 
     private:
         std::atomic<int> Iter_;
