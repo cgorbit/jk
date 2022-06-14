@@ -30,6 +30,8 @@ namespace NJK {
             Root_.Dentry = EnsureMountedInode(rootVolume, rootDir);
         }
 
+        ~TImpl();
+
         void Set(const std::string& path, const TValue& value, ui32 deadline) {
             (void)deadline; // TODO
             auto node = ResolvePath(path, true);
@@ -119,10 +121,13 @@ namespace NJK {
                 NotExists,
             };
                 
+            static constexpr const size_t MaxLocalValueSize = 128; // TODO
+
             TNaiveSpinLock Lock;
 
             EState State = EState::Uninitialized;
             TCondVar InitCondVar;
+            std::atomic<size_t> Initialized{0};
 
             bool CreateLocked = false;
             TCondVar CreateCondVar;
@@ -151,6 +156,8 @@ namespace NJK {
 
             //TInode::TId InodeId{};
             std::unique_ptr<TInode> Inode;
+            std::optional<TValue> LocalValue;
+            ui32 LocalDeadline = 0;
 
             std::unique_ptr<std::vector<TMount>> Mounts;
 
@@ -249,6 +256,15 @@ namespace NJK {
 
             /////////////////////////////////////////////////////////////////
 
+            void Flush() {
+TODO_BETTER_CONCURRENCY
+                auto g = LockGuard();
+                if (LocalValue) {
+                    TInodeDataOps ops(Volume);
+                    ops.SetValue(*Inode, *LocalValue, LocalDeadline);
+                }
+            }
+
             void SetValue(const TValue& value, ui32 deadline) {
                 LockValueForWrite();
                 Y_DEFER([this] {
@@ -257,8 +273,13 @@ namespace NJK {
 
 TODO_BETTER_CONCURRENCY
                 auto g = LockGuard();
-                TInodeDataOps ops(Volume);
-                ops.SetValue(*Inode, value, deadline);
+                if (auto* str = std::get_if<std::string>(&value); str && str->size() > MaxLocalValueSize) {
+                    TInodeDataOps ops(Volume);
+                    ops.SetValue(*Inode, value, deadline);
+                } else {
+                    LocalValue = value;
+                    LocalDeadline = deadline;
+                }
             }
 
             void UnsetValue() {
@@ -269,8 +290,8 @@ TODO_BETTER_CONCURRENCY
 
 TODO_BETTER_CONCURRENCY
                 auto g = LockGuard();
-                TInodeDataOps ops(Volume);
-                ops.UnsetValue(*Inode);
+                LocalValue = TValue{};
+                LocalDeadline = 0;
             }
 
             TValue GetValue() {
@@ -281,8 +302,12 @@ TODO_BETTER_CONCURRENCY
 
 TODO_BETTER_CONCURRENCY
                 auto g = LockGuard();
-                TInodeDataOps ops(Volume);
-                return ops.GetValue(*Inode);
+                if (LocalValue) {
+                    return *LocalValue;
+                } else {
+                    TInodeDataOps ops(Volume);
+                    return ops.GetValue(*Inode);
+                }
             }
         };
 
@@ -421,6 +446,9 @@ TODO_BETTER_CONCURRENCY
 
     Y_NO_INLINE
     void TStorage::TImpl::TDentry::WaitInitialized() {
+        if (Initialized.load()) {
+            return;
+        }
         auto g = LockGuard();
         while (State == EState::Uninitialized) {
             InitCondVar.Wait(Lock);
@@ -430,30 +458,11 @@ TODO_BETTER_CONCURRENCY
     [[nodiscard]]
     Y_NO_INLINE
     TStorage::TImpl::TChildNameLockGuard TStorage::TImpl::TDentry::LockChild(const std::string& name) {
-        auto copy = name;
-        {
-            auto g = LockGuard();
-            while (true) {
-                if (std::none_of(ChildrenLocks.begin(), ChildrenLocks.end(), [&](const std::string& other) { return other == name; })) {
-                    break;
-                }
-                ChildrenLocksCondVar.Wait(Lock);
-            }
-            ChildrenLocks.emplace_back(std::move(copy));
-        }
         return TChildNameLockGuard(this, name);
     }
 
     Y_NO_INLINE
-    void TStorage::TImpl::TDentry::UnlockChild(const std::string& name) {
-        {
-            auto g = LockGuard();
-            const size_t size0 = ChildrenLocks.size();
-            Y_VERIFY(size0 > 0);
-            std::erase(ChildrenLocks, name);
-            Y_VERIFY(ChildrenLocks.size() == size0 - 1);
-        }
-        ChildrenLocksCondVar.NotifyAll(); // FIXME One
+    void TStorage::TImpl::TDentry::UnlockChild(const std::string&) {
     }
 
     Y_NO_INLINE
@@ -669,6 +678,7 @@ TODO_BETTER_CONCURRENCY
                         child->InParentName = std::move(childName);
                         child->Volume = volume;
                     }
+                    child->Initialized.store(1);
                     return {};
                 }
 
@@ -681,6 +691,7 @@ TODO_BETTER_CONCURRENCY
                     ++child->PreventRemoval;
                     child.PreventRemoval();
                 }
+                child->Initialized.store(1);
             }
             return child;
         } else {
@@ -799,17 +810,20 @@ TODO_BETTER_CONCURRENCY
         auto srcInode = ResolveInVolumePath(srcVolume, srcDir);
         auto& dentry = Mounted_[{srcVolume, srcInode.Id}];
 
-        auto g = dentry.LockGuard();
-        if (dentry.State == TDentry::EState::Uninitialized) {
-            std::stringstream s;
-            s << (void*)srcVolume << srcVolume->GetFsDir() << '@' << srcDir;
-            dentry.InParentName = s.str();
-            dentry.Volume = srcVolume;
-            // TODO Better
-            dentry.Inode.reset(new TInode());
-            *dentry.Inode = std::move(srcInode);
-            dentry.State = TDentry::EState::Exists;
+        {
+            auto g = dentry.LockGuard();
+            if (dentry.State == TDentry::EState::Uninitialized) {
+                std::stringstream s;
+                s << (void*)srcVolume << srcVolume->GetFsDir() << '@' << srcDir;
+                dentry.InParentName = s.str();
+                dentry.Volume = srcVolume;
+                // TODO Better
+                dentry.Inode.reset(new TInode());
+                *dentry.Inode = std::move(srcInode);
+                dentry.State = TDentry::EState::Exists;
+            }
         }
+        dentry.Initialized.store(1);
 
         return &dentry;
     }
@@ -822,6 +836,12 @@ TODO_BETTER_CONCURRENCY
         auto& mount = mountPoint.Dentry->Mounts->emplace_back();
         mount.Volume = srcVolume;
         mount.Dentry = EnsureMountedInode(srcVolume, srcDir);
+    }
+
+    TStorage::TImpl::~TImpl() {
+        DentryCache_.Iterate([] (const TDentryCacheKey&, TDentry& dentry) {
+            dentry.Flush();
+        });
     }
 
     TStorage::TStorage(TVolume* rootVolume, const std::string& rootDir)
